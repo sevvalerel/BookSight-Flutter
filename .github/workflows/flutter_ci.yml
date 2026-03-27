@@ -1,0 +1,29 @@
+name: Flutter CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Flutter SDK kur
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.41.5'
+          channel: 'stable'
+
+      - name: Bağımlılıkları yükle
+        run: flutter pub get
+
+      - name: Analiz et
+        run: flutter analyze
+
+      - name: Testleri çalıştır
+        run: flutter test
