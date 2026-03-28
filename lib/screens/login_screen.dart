@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../services/auth_service.dart';
 
 /// Light tema renk paleti (tasarım referansı).
 abstract final class _LoginColors {
@@ -18,6 +19,7 @@ class LoginScreen extends StatefulWidget {
 }
 
 class _LoginScreenState extends State<LoginScreen> {
+  final _authService = AuthService();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   bool _isLoading = false;
@@ -320,11 +322,38 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 
-  void _login() {
+  Future<void> _login() async {
+    // Email veya şifre boşsa devam etme
+    if (_emailController.text.trim().isEmpty ||
+        _passwordController.text.trim().isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('E-posta ve şifre boş bırakılamaz.')),
+      );
+      return;
+    }
+
     setState(() => _isLoading = true);
-    // TODO: Spring Boot API'ye bağlanacak
-    Future.delayed(const Duration(seconds: 1), () {
+
+    try {
+      await _authService.login(
+        _emailController.text.trim(),
+        _passwordController.text.trim(),
+      );
+
+      // Başarılı → home'a geç
+      if (mounted) {
+        Navigator.pushReplacementNamed(context, '/home');
+      }
+    } catch (e) {
+      // Hata → SnackBar göster
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(e.toString().replaceAll('Exception: ', ''))),
+        );
+      }
+    } finally {
+      // Her durumda loading'i kapat
       if (mounted) setState(() => _isLoading = false);
-    });
+    }
   }
 }

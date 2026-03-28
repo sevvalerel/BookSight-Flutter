@@ -2,7 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 
-import 'login_screen.dart';
+import '../services/auth_service.dart';
 
 /// Açık tema splash: lavanta → nane yeşili gradient, logo, slogan, sayfa noktaları.
 abstract final class _SplashColors {
@@ -27,14 +27,22 @@ class _SplashScreenState extends State<SplashScreen> {
   @override
   void initState() {
     super.initState();
+    _bootstrap();
+  }
+
+  Future<void> _bootstrap() async {
+    final loggedIn = await AuthService().isLoggedIn();
+    if (!mounted) return;
+    if (loggedIn) {
+      Navigator.of(context).pushReplacementNamed('/home');
+      return;
+    }
     _timer = Timer(_navDelay, _goToLogin);
   }
 
   void _goToLogin() {
     if (!mounted) return;
-    Navigator.of(context).pushReplacement(
-      MaterialPageRoute<void>(builder: (_) => const LoginScreen()),
-    );
+    Navigator.of(context).pushReplacementNamed('/login');
   }
 
   @override
