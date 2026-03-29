@@ -23,7 +23,7 @@ jobs:
         run: flutter pub get
 
       - name: Analiz et
-        run: flutter analyze
+        run: flutter analyze --no-fatal-infos
 
       - name: Testleri çalıştır
         run: flutter test

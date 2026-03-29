@@ -8,7 +8,6 @@ class AuthService {
   Future<String> login(String email, String password) async {
     final url = Uri.parse('$_baseUrl/api/auth/login');
 
-    print('>>> İstek atılıyor: $url');
 
     try {
       final response = await http.post(
@@ -17,8 +16,7 @@ class AuthService {
         body: jsonEncode({'email': email, 'password': password}),
       );
 
-      print('>>> Status: ${response.statusCode}');
-      print('>>> Body: ${response.body}');
+
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
@@ -32,7 +30,7 @@ class AuthService {
         throw Exception('Sunucu hatası: ${response.statusCode}');
       }
     } catch (e) {
-      print('>>> HATA: $e');
+
       rethrow;
     }
   }
