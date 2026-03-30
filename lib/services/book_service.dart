@@ -43,11 +43,6 @@ class Book {
 class BookService {
   static const String _baseUrl = 'http://172.20.28.103:8080';
 
-  Future<String?> _getToken() async {
-    final prefs = await SharedPreferences.getInstance();
-    return prefs.getString('jwt_token');
-  }
-
   Future<List<Book>> getBooks({String? search, String? genre}) async {
     String url = '$_baseUrl/api/books';
     final params = <String>[];
