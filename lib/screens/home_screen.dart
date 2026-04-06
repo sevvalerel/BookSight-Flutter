@@ -118,9 +118,7 @@ class _HomeScreenState extends State<HomeScreen> {
               spacing: 8, runSpacing: 8,
               children: _trendTags.map((t) => _TrendChip(
                 label: t,
-                onTap: () {
-                  _searchController.text = t;
-                },
+                onTap: () => _searchController.text = t,
               )).toList(),
             ),
           ),
@@ -161,9 +159,7 @@ class _HomeScreenState extends State<HomeScreen> {
           child: Padding(
             padding: const EdgeInsets.fromLTRB(20, 28, 20, 8),
             child: Text(
-              _searchResults.isEmpty && _searchController.text.isEmpty
-                ? 'Tüm Kitaplar'
-                : 'Arama Sonuçları',
+              _searchResults.isEmpty && _searchController.text.isEmpty ? 'Tüm Kitaplar' : 'Arama Sonuçları',
               style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: _HomeColors.darkText),
             ),
           ),
@@ -180,9 +176,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   child: _SearchResultRow(book: list[index]),
                 );
               },
-              childCount: _searchController.text.isEmpty
-                ? _books.length
-                : _searchResults.length,
+              childCount: _searchController.text.isEmpty ? _books.length : _searchResults.length,
             ),
           ),
         ),
@@ -319,69 +313,72 @@ class _PopularBookCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
-      width: 158,
-      child: Container(
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(22),
-          boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.06), blurRadius: 14, offset: const Offset(0, 4))],
-        ),
-        padding: const EdgeInsets.all(10),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Expanded(
-              child: Stack(
-                children: [
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(16),
-                    child: book.coverUrl != null
-                      ? Image.network(book.coverUrl!, width: double.infinity, fit: BoxFit.cover,
-                          errorBuilder: (_, __, ___) => Container(color: _HomeColors.placeholderCover))
-                      : Container(width: double.infinity, color: _HomeColors.placeholderCover),
-                  ),
-                  Positioned(
-                    top: 6, right: 6,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                      decoration: BoxDecoration(color: _HomeColors.purpleAccent, borderRadius: BorderRadius.circular(10)),
-                      child: const Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(Icons.auto_awesome_rounded, color: Colors.white, size: 12),
-                          SizedBox(width: 4),
-                          Text('AI önerisi', style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.w600)),
-                        ],
+    return GestureDetector(
+      onTap: () => Navigator.pushNamed(context, '/book-detail', arguments: book),
+      child: SizedBox(
+        width: 158,
+        child: Container(
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(22),
+            boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.06), blurRadius: 14, offset: const Offset(0, 4))],
+          ),
+          padding: const EdgeInsets.all(10),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: Stack(
+                  children: [
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(16),
+                      child: book.coverUrl != null
+                        ? Image.network(book.coverUrl!, width: double.infinity, fit: BoxFit.cover,
+                            errorBuilder: (_, __, ___) => Container(color: _HomeColors.placeholderCover))
+                        : Container(width: double.infinity, color: _HomeColors.placeholderCover),
+                    ),
+                    Positioned(
+                      top: 6, right: 6,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        decoration: BoxDecoration(color: _HomeColors.purpleAccent, borderRadius: BorderRadius.circular(10)),
+                        child: const Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(Icons.auto_awesome_rounded, color: Colors.white, size: 12),
+                            SizedBox(width: 4),
+                            Text('AI önerisi', style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.w600)),
+                          ],
+                        ),
                       ),
                     ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 10),
+              Text(book.title, maxLines: 2, overflow: TextOverflow.ellipsis,
+                style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: _HomeColors.darkText, height: 1.2)),
+              const SizedBox(height: 4),
+              Text(book.author, maxLines: 1, overflow: TextOverflow.ellipsis,
+                style: const TextStyle(fontSize: 12, color: _HomeColors.greyText)),
+              const SizedBox(height: 6),
+              Row(
+                children: [
+                  const Icon(Icons.star_rounded, color: _HomeColors.star, size: 16),
+                  const SizedBox(width: 4),
+                  Text(
+                    book.avgRating != null ? book.avgRating!.toStringAsFixed(1) : '—',
+                    style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: _HomeColors.darkText),
                   ),
+                  if (book.reviewCount != null)
+                    Expanded(
+                      child: Text(' • ${book.reviewCount} yorum', maxLines: 1, overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(fontSize: 11, color: _HomeColors.greyText)),
+                    ),
                 ],
               ),
-            ),
-            const SizedBox(height: 10),
-            Text(book.title, maxLines: 2, overflow: TextOverflow.ellipsis,
-              style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: _HomeColors.darkText, height: 1.2)),
-            const SizedBox(height: 4),
-            Text(book.author, maxLines: 1, overflow: TextOverflow.ellipsis,
-              style: const TextStyle(fontSize: 12, color: _HomeColors.greyText)),
-            const SizedBox(height: 6),
-            Row(
-              children: [
-                const Icon(Icons.star_rounded, color: _HomeColors.star, size: 16),
-                const SizedBox(width: 4),
-                Text(
-                  book.avgRating != null ? book.avgRating!.toStringAsFixed(1) : '—',
-                  style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: _HomeColors.darkText),
-                ),
-                if (book.reviewCount != null)
-                  Expanded(
-                    child: Text(' • ${book.reviewCount} yorum', maxLines: 1, overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(fontSize: 11, color: _HomeColors.greyText)),
-                  ),
-              ],
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -394,38 +391,41 @@ class _SearchResultRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(18),
-        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 10, offset: const Offset(0, 2))],
-      ),
-      padding: const EdgeInsets.all(12),
-      child: Row(
-        children: [
-          ClipRRect(
-            borderRadius: BorderRadius.circular(12),
-            child: book.coverUrl != null
-              ? Image.network(book.coverUrl!, width: 56, height: 72, fit: BoxFit.cover,
-                  errorBuilder: (_, __, ___) => Container(width: 56, height: 72, color: _HomeColors.placeholderCover))
-              : Container(width: 56, height: 72, color: _HomeColors.placeholderCover),
-          ),
-          const SizedBox(width: 14),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(book.title, style: const TextStyle(fontWeight: FontWeight.w700, color: _HomeColors.darkText)),
-                const SizedBox(height: 4),
-                Text(book.author, style: TextStyle(fontSize: 12, color: _HomeColors.greyText.withValues(alpha: 0.95))),
-                if (book.genre != null) ...[
-                  const SizedBox(height: 4),
-                  Text(book.genre!, style: const TextStyle(fontSize: 11, color: _HomeColors.greyText)),
-                ],
-              ],
+    return GestureDetector(
+      onTap: () => Navigator.pushNamed(context, '/book-detail', arguments: book),
+      child: Container(
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(18),
+          boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 10, offset: const Offset(0, 2))],
+        ),
+        padding: const EdgeInsets.all(12),
+        child: Row(
+          children: [
+            ClipRRect(
+              borderRadius: BorderRadius.circular(12),
+              child: book.coverUrl != null
+                ? Image.network(book.coverUrl!, width: 56, height: 72, fit: BoxFit.cover,
+                    errorBuilder: (_, __, ___) => Container(width: 56, height: 72, color: _HomeColors.placeholderCover))
+                : Container(width: 56, height: 72, color: _HomeColors.placeholderCover),
             ),
-          ),
-        ],
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(book.title, style: const TextStyle(fontWeight: FontWeight.w700, color: _HomeColors.darkText)),
+                  const SizedBox(height: 4),
+                  Text(book.author, style: TextStyle(fontSize: 12, color: _HomeColors.greyText.withValues(alpha: 0.95))),
+                  if (book.genre != null) ...[
+                    const SizedBox(height: 4),
+                    Text(book.genre!, style: const TextStyle(fontSize: 11, color: _HomeColors.greyText)),
+                  ],
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

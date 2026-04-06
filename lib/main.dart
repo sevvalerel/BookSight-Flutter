@@ -4,6 +4,9 @@ import 'screens/home_screen.dart';
 import 'screens/login_screen.dart';
 import 'screens/splash_screen.dart';
 
+import 'screens/book_detail_screen.dart';
+import 'services/book_service.dart';
+
 void main() {
   runApp(const BookSightApp());
 }
@@ -28,6 +31,9 @@ class BookSightApp extends StatelessWidget {
         '/splash': (context) => const SplashScreen(),
         '/login': (context) => const LoginScreen(),
         '/home': (context) => const HomeScreen(),
+        '/book-detail': (context) => BookDetailScreen(
+          book: ModalRoute.of(context)!.settings.arguments as Book,
+),
       },
     );
   }
