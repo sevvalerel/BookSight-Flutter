@@ -23,6 +23,8 @@ class AuthService {
         final token = data['token'] as String;
         final prefs = await SharedPreferences.getInstance();
         await prefs.setString('jwt_token', token);
+        final username = data['username'] as String? ?? '';
+        await prefs.setString('username', username);
         return token;
       } else if (response.statusCode == 401) {
         throw Exception('E-posta veya şifre hatalı.');
@@ -49,4 +51,9 @@ class AuthService {
     final token = await getToken();
     return token != null && token.isNotEmpty;
   }
+
+  Future<String?> getUsername() async {
+  final prefs = await SharedPreferences.getInstance();
+  return prefs.getString('username');
+}
 }

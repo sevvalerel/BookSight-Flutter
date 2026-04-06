@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../services/book_service.dart';
 import '../services/review_service.dart';
+import '../services/auth_service.dart';
 
 abstract final class _DetailColors {
   static const Color background = Color(0xFFF5FAF7);
@@ -25,6 +26,7 @@ class _BookDetailScreenState extends State<BookDetailScreen> {
   List<Review> _reviews = [];
   bool _isLoadingReviews = true;
   bool _isSubmitting = false;
+  String? _currentUsername;
 
   final _reviewController = TextEditingController();
   int _selectedRating = 5;
@@ -33,6 +35,12 @@ class _BookDetailScreenState extends State<BookDetailScreen> {
   void initState() {
     super.initState();
     _loadReviews();
+    _loadCurrentUser();
+  }
+
+  Future<void> _loadCurrentUser() async {
+    final username = await AuthService().getUsername();
+    setState(() => _currentUsername = username);
   }
 
   @override
@@ -57,6 +65,12 @@ class _BookDetailScreenState extends State<BookDetailScreen> {
     if (_reviewController.text.trim().isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Yorum boş bırakılamaz.')),
+      );
+      return;
+    }
+    if (_reviewController.text.trim().length < 50) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Yorum en az 50 karakter olmalıdır.')),
       );
       return;
     }
@@ -88,6 +102,24 @@ class _BookDetailScreenState extends State<BookDetailScreen> {
     }
   }
 
+  Future<void> _deleteReview(int reviewId) async {
+    try {
+      await _reviewService.deleteReview(reviewId);
+      await _loadReviews();
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Yorum silindi.')),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(e.toString().replaceAll('Exception: ', ''))),
+        );
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final book = widget.book;
@@ -116,7 +148,6 @@ class _BookDetailScreenState extends State<BookDetailScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Kitap kapak + bilgi
             Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -125,18 +156,14 @@ class _BookDetailScreenState extends State<BookDetailScreen> {
                   child: book.coverUrl != null
                     ? Image.network(
                         book.coverUrl!,
-                        width: 100,
-                        height: 140,
+                        width: 100, height: 140,
                         fit: BoxFit.cover,
                         errorBuilder: (_, __, ___) => Container(
                           width: 100, height: 140,
                           color: _DetailColors.placeholderCover,
                         ),
                       )
-                    : Container(
-                        width: 100, height: 140,
-                        color: _DetailColors.placeholderCover,
-                      ),
+                    : Container(width: 100, height: 140, color: _DetailColors.placeholderCover),
                 ),
                 const SizedBox(width: 16),
                 Expanded(
@@ -144,17 +171,10 @@ class _BookDetailScreenState extends State<BookDetailScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(book.title,
-                        style: const TextStyle(
-                          fontSize: 18, fontWeight: FontWeight.w700,
-                          color: _DetailColors.darkText,
-                        ),
-                      ),
+                        style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: _DetailColors.darkText)),
                       const SizedBox(height: 6),
                       Text(book.author,
-                        style: const TextStyle(
-                          fontSize: 14, color: _DetailColors.greyText,
-                        ),
-                      ),
+                        style: const TextStyle(fontSize: 14, color: _DetailColors.greyText)),
                       if (book.genre != null) ...[
                         const SizedBox(height: 4),
                         Container(
@@ -164,11 +184,7 @@ class _BookDetailScreenState extends State<BookDetailScreen> {
                             borderRadius: BorderRadius.circular(20),
                           ),
                           child: Text(book.genre!,
-                            style: const TextStyle(
-                              fontSize: 12, color: _DetailColors.mintAccent,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
+                            style: const TextStyle(fontSize: 12, color: _DetailColors.mintAccent, fontWeight: FontWeight.w600)),
                         ),
                       ],
                       if (book.avgRating != null) ...[
@@ -177,26 +193,18 @@ class _BookDetailScreenState extends State<BookDetailScreen> {
                           children: [
                             const Icon(Icons.star_rounded, color: _DetailColors.star, size: 18),
                             const SizedBox(width: 4),
-                            Text(
-                              book.avgRating!.toStringAsFixed(1),
-                              style: const TextStyle(
-                                fontSize: 14, fontWeight: FontWeight.w700,
-                                color: _DetailColors.darkText,
-                              ),
-                            ),
+                            Text(book.avgRating!.toStringAsFixed(1),
+                              style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: _DetailColors.darkText)),
                             if (book.reviewCount != null)
-                              Text(
-                                ' • ${book.reviewCount} yorum',
-                                style: const TextStyle(fontSize: 12, color: _DetailColors.greyText),
-                              ),
+                              Text(' • ${book.reviewCount} yorum',
+                                style: const TextStyle(fontSize: 12, color: _DetailColors.greyText)),
                           ],
                         ),
                       ],
                       if (book.publicationYear != null) ...[
                         const SizedBox(height: 4),
                         Text('${book.publicationYear}',
-                          style: const TextStyle(fontSize: 12, color: _DetailColors.greyText),
-                        ),
+                          style: const TextStyle(fontSize: 12, color: _DetailColors.greyText)),
                       ],
                     ],
                   ),
@@ -204,34 +212,27 @@ class _BookDetailScreenState extends State<BookDetailScreen> {
               ],
             ),
 
-            // Açıklama
             if (book.description != null) ...[
               const SizedBox(height: 24),
               const Text('Açıklama',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: _DetailColors.darkText),
-              ),
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: _DetailColors.darkText)),
               const SizedBox(height: 8),
               Text(book.description!,
                 style: const TextStyle(fontSize: 14, color: _DetailColors.greyText, height: 1.5),
                 maxLines: 5,
-                overflow: TextOverflow.ellipsis,
-              ),
+                overflow: TextOverflow.ellipsis),
             ],
 
-            // Yorum ekle
             const SizedBox(height: 24),
             const Text('Yorum Ekle',
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: _DetailColors.darkText),
-            ),
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: _DetailColors.darkText)),
             const SizedBox(height: 12),
-            // Yıldız seçimi
             Row(
               children: List.generate(5, (i) => GestureDetector(
                 onTap: () => setState(() => _selectedRating = i + 1),
                 child: Icon(
                   i < _selectedRating ? Icons.star_rounded : Icons.star_border_rounded,
-                  color: _DetailColors.star,
-                  size: 32,
+                  color: _DetailColors.star, size: 32,
                 ),
               )),
             ),
@@ -240,7 +241,7 @@ class _BookDetailScreenState extends State<BookDetailScreen> {
               controller: _reviewController,
               maxLines: 3,
               decoration: InputDecoration(
-                hintText: 'Düşüncelerinizi yazın...',
+                hintText: 'Düşüncelerinizi yazın... (en az 50 karakter)',
                 filled: true,
                 fillColor: Colors.white,
                 border: OutlineInputBorder(
@@ -268,11 +269,9 @@ class _BookDetailScreenState extends State<BookDetailScreen> {
               ),
             ),
 
-            // Yorumlar listesi
             const SizedBox(height: 24),
             const Text('Yorumlar',
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: _DetailColors.darkText),
-            ),
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: _DetailColors.darkText)),
             const SizedBox(height: 12),
             _isLoadingReviews
               ? const Center(child: CircularProgressIndicator())
@@ -284,7 +283,14 @@ class _BookDetailScreenState extends State<BookDetailScreen> {
                     physics: const NeverScrollableScrollPhysics(),
                     itemCount: _reviews.length,
                     separatorBuilder: (_, __) => const SizedBox(height: 12),
-                    itemBuilder: (context, i) => _ReviewCard(review: _reviews[i]),
+                    itemBuilder: (context, i) => _ReviewCard(
+                      review: _reviews[i],
+                      currentUsername: _currentUsername,
+                      onDelete: () {
+                        final reviewId = _reviews[i].reviewId;
+                        if (reviewId != null) _deleteReview(reviewId);
+                      },
+                    ),
                   ),
             const SizedBox(height: 40),
           ],
@@ -295,11 +301,14 @@ class _BookDetailScreenState extends State<BookDetailScreen> {
 }
 
 class _ReviewCard extends StatelessWidget {
-  const _ReviewCard({required this.review});
+  const _ReviewCard({required this.review, required this.currentUsername, required this.onDelete});
   final Review review;
+  final String? currentUsername;
+  final VoidCallback onDelete;
 
   @override
   Widget build(BuildContext context) {
+    final isOwner = currentUsername != null && currentUsername == review.username;
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -330,6 +339,13 @@ class _ReviewCard extends StatelessWidget {
                 review.username ?? 'Kullanıcı',
                 style: const TextStyle(fontSize: 12, color: _DetailColors.greyText),
               ),
+              if (isOwner) ...[
+                const SizedBox(width: 8),
+                GestureDetector(
+                  onTap: onDelete,
+                  child: const Icon(Icons.delete_outline_rounded, size: 18, color: Colors.redAccent),
+                ),
+              ],
             ],
           ),
           const SizedBox(height: 8),

@@ -66,4 +66,19 @@ class ReviewService {
       throw Exception('Yorum eklenemedi: ${response.statusCode}');
     }
   }
+  Future<void> deleteReview(int reviewId) async {
+  final token = await _getToken();
+  if (token == null) throw Exception('Oturum açılmamış.');
+
+  final response = await http.delete(
+    Uri.parse('$_baseUrl/api/reviews/$reviewId'),
+    headers: {
+      'Authorization': 'Bearer $token',
+    },
+  );
+
+  if (response.statusCode != 200) {
+    throw Exception('Yorum silinemedi: ${response.statusCode}');
+  }
+}
 }
