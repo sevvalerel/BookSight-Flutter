@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../services/auth_service.dart';
 import '../services/book_service.dart';
+import '../services/user_service.dart';
 
 abstract final class _HomeColors {
   static const Color background = Color(0xFFF5FAF7);
@@ -231,29 +232,53 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildProfileTab() {
-    return Padding(
-      padding: const EdgeInsets.all(24),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          const SizedBox(height: 24),
-          const Icon(Icons.person_outline_rounded, size: 64, color: _HomeColors.greyText),
-          const SizedBox(height: 16),
-          const Text('Profil', textAlign: TextAlign.center,
-            style: TextStyle(fontSize: 22, fontWeight: FontWeight.w700, color: _HomeColors.darkText)),
-          const Spacer(),
-          OutlinedButton.icon(
-            onPressed: _logout,
-            icon: const Icon(Icons.logout_rounded),
-            label: const Text('Çıkış yap'),
-            style: OutlinedButton.styleFrom(
-              foregroundColor: _HomeColors.darkText,
-              padding: const EdgeInsets.symmetric(vertical: 14),
-            ),
+    return FutureBuilder<UserProfile>(
+      future: UserService().getMyProfile(),
+      builder: (context, snapshot) {
+        return Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              const SizedBox(height: 24),
+              Center(
+                child: Container(
+                  width: 80,
+                  height: 80,
+                  decoration: BoxDecoration(
+                    color: _HomeColors.purpleAccent.withValues(alpha: 0.2),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(Icons.person_rounded, size: 48, color: _HomeColors.purpleAccent),
+                ),
+              ),
+              const SizedBox(height: 16),
+              Text(
+                snapshot.data?.username ?? '...',
+                textAlign: TextAlign.center,
+                style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w700, color: _HomeColors.darkText),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                snapshot.data?.email ?? '',
+                textAlign: TextAlign.center,
+                style: const TextStyle(fontSize: 14, color: _HomeColors.greyText),
+              ),
+              const Spacer(),
+              OutlinedButton.icon(
+                onPressed: _logout,
+                icon: const Icon(Icons.logout_rounded),
+                label: const Text('Çıkış yap'),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: _HomeColors.darkText,
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                ),
+              ),
+              const SizedBox(height: 88),
+            ],
           ),
-          const SizedBox(height: 88),
-        ],
-      ),
+        );
+      },
     );
   }
 
