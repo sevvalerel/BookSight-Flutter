@@ -209,7 +209,7 @@ class _LoginScreenState extends State<LoginScreen> {
                             ),
                           ),
                           GestureDetector(
-                            onTap: () {},
+                            onTap: () => Navigator.pushNamed(context, '/register'),
                             child: const Text(
                               'Kayıt Ol',
                               style: TextStyle(
