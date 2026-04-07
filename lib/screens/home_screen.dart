@@ -29,10 +29,12 @@ class _HomeScreenState extends State<HomeScreen> {
   List<Book> _searchResults = [];
   bool _isLoading = true;
   bool _isSearching = false;
+  String? _selectedGenre;
   int _searchRequestId = 0;
+  
 
   static const List<String> _trendTags = [
-    'Fantastik', 'Polisiye', 'Klasikler', 'Kişisel Gelişim', 'Bilim Kurgu',
+    'Roman', 'Klasik', 'Distopya', 'Bilim',
   ];
 
   @override
@@ -53,6 +55,18 @@ class _HomeScreenState extends State<HomeScreen> {
       setState(() => _isLoading = false);
     }
   }
+  Future<void> _loadBooksByGenre(String? genre) async {
+  setState(() => _isLoading = true);
+  try {
+    final books = await _bookService.getBooks(genre: genre);
+    setState(() {
+      _books = books;
+      _isLoading = false;
+    });
+  } catch (e) {
+    setState(() => _isLoading = false);
+  }
+}
 
   void _onSearchChanged() async {
     final query = _searchController.text.trim();
@@ -140,7 +154,14 @@ class _HomeScreenState extends State<HomeScreen> {
                 spacing: 8, runSpacing: 8,
                 children: _trendTags.map((t) => _TrendChip(
                   label: t,
-                  onTap: () => _searchController.text = t,
+                  selected: _selectedGenre == t,
+                  onTap: () {
+                    setState(() {
+                      _selectedGenre = _selectedGenre == t ? null : t;
+                      _searchController.clear();
+                    });
+                    _loadBooksByGenre(_selectedGenre);
+                  },
                 )).toList(),
               ),
             ),
@@ -182,7 +203,7 @@ class _HomeScreenState extends State<HomeScreen> {
           child: Padding(
             padding: const EdgeInsets.fromLTRB(20, 28, 20, 8),
             child: Text(
-              hasQuery ? 'Arama Sonuclari' : 'Tum Kitaplar',
+            hasQuery ? 'Arama Sonuçları' : 'Tüm Kitaplar',
               style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: _HomeColors.darkText),
             ),
           ),
@@ -295,14 +316,15 @@ class _HomeScreenState extends State<HomeScreen> {
 }
 
 class _TrendChip extends StatelessWidget {
-  const _TrendChip({required this.label, required this.onTap});
+  const _TrendChip({required this.label, required this.onTap, this.selected = false});
   final String label;
   final VoidCallback onTap;
+  final bool selected;
 
   @override
   Widget build(BuildContext context) {
     return Material(
-      color: Colors.white,
+      color: selected ? _HomeColors.mintAccent : Colors.white,
       borderRadius: BorderRadius.circular(20),
       child: InkWell(
         onTap: onTap,
@@ -311,9 +333,18 @@ class _TrendChip extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: _HomeColors.chipBorder),
+            border: Border.all(
+              color: selected ? _HomeColors.mintAccent : _HomeColors.chipBorder,
+            ),
           ),
-          child: Text(label, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500, color: _HomeColors.darkText)),
+          child: Text(
+            label,
+            style: TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w500,
+              color: selected ? Colors.white : _HomeColors.darkText,
+            ),
+          ),
         ),
       ),
     );

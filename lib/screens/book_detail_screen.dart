@@ -120,6 +120,132 @@ class _BookDetailScreenState extends State<BookDetailScreen> {
     }
   }
 
+  Future<void> _editReview(Review review) async {
+    final reviewId = review.reviewId;
+    if (reviewId == null) return;
+
+    final reviewController = TextEditingController(text: review.reviewText ?? '');
+    int selectedRating = review.rating ?? 5;
+    bool isSaving = false;
+
+    await showDialog(
+      context: context,
+      builder: (dialogContext) {
+        return StatefulBuilder(
+          builder: (dialogInnerContext, setDialogState) {
+            return AlertDialog(
+              title: const Text('Yorumu Düzenle'),
+              content: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: List.generate(
+                        5,
+                        (i) => GestureDetector(
+                          onTap: () => setDialogState(() => selectedRating = i + 1),
+                          child: Icon(
+                            i < selectedRating
+                                ? Icons.star_rounded
+                                : Icons.star_border_rounded,
+                            color: _DetailColors.star,
+                            size: 30,
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    TextField(
+                      controller: reviewController,
+                      maxLines: 4,
+                      decoration: InputDecoration(
+                        hintText: 'Yorumunuzu güncelleyin... (en az 50 karakter)',
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: isSaving ? null : () => Navigator.pop(dialogContext),
+                  child: const Text('İptal'),
+                ),
+                ElevatedButton(
+                  onPressed: isSaving
+                      ? null
+                      : () async {
+                          final text = reviewController.text.trim();
+                          if (text.length < 50) {
+                            ScaffoldMessenger.of(this.context).showSnackBar(
+                              const SnackBar(
+                                content: Text('Yorum en az 50 karakter olmalıdır.'),
+                              ),
+                            );
+                            return;
+                          }
+
+                          setDialogState(() => isSaving = true);
+                          try {
+                            await _reviewService.updateReview(
+                              reviewId: reviewId,
+                              reviewText: text,
+                              rating: selectedRating,
+                            );
+
+                            if (!mounted) return;
+                            await _loadReviews();
+                            if (dialogContext.mounted) {
+                              Navigator.pop(dialogContext);
+                            }
+                            if (mounted) {
+                              ScaffoldMessenger.of(this.context).showSnackBar(
+                                const SnackBar(content: Text('Yorum güncellendi.')),
+                              );
+                            }
+                          } catch (e) {
+                            if (dialogInnerContext.mounted) {
+                              setDialogState(() => isSaving = false);
+                            }
+                            if (mounted) {
+                              ScaffoldMessenger.of(this.context).showSnackBar(
+                                SnackBar(
+                                  content: Text(
+                                    e.toString().replaceAll('Exception: ', ''),
+                                  ),
+                                ),
+                              );
+                            }
+                          }
+                        },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: _DetailColors.mintAccent,
+                    foregroundColor: Colors.white,
+                  ),
+                  child: isSaving
+                      ? const SizedBox(
+                          width: 16,
+                          height: 16,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: Colors.white,
+                          ),
+                        )
+                      : const Text('Kaydet'),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+
+    reviewController.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
     final book = widget.book;
@@ -286,6 +412,9 @@ class _BookDetailScreenState extends State<BookDetailScreen> {
                     itemBuilder: (context, i) => _ReviewCard(
                       review: _reviews[i],
                       currentUsername: _currentUsername,
+                      onEdit: () {
+                        _editReview(_reviews[i]);
+                      },
                       onDelete: () {
                         final reviewId = _reviews[i].reviewId;
                         if (reviewId != null) _deleteReview(reviewId);
@@ -301,10 +430,12 @@ class _BookDetailScreenState extends State<BookDetailScreen> {
 }
 
 class _ReviewCard extends StatelessWidget {
-  const _ReviewCard({required this.review, required this.currentUsername, required this.onDelete});
+  const _ReviewCard({required this.review, required this.currentUsername, required this.onDelete, required this.onEdit});
   final Review review;
   final String? currentUsername;
   final VoidCallback onDelete;
+  final VoidCallback onEdit;
+  
 
   @override
   Widget build(BuildContext context) {
@@ -340,6 +471,11 @@ class _ReviewCard extends StatelessWidget {
                 style: const TextStyle(fontSize: 12, color: _DetailColors.greyText),
               ),
               if (isOwner) ...[
+                const SizedBox(width: 8),
+                GestureDetector(
+                  onTap: onEdit,
+                  child: const Icon(Icons.edit_outlined, size: 18, color: _DetailColors.mintAccent),
+                ),
                 const SizedBox(width: 8),
                 GestureDetector(
                   onTap: onDelete,

@@ -98,4 +98,28 @@ class ReviewService {
     throw Exception('Yorum silinemedi: ${response.statusCode}');
   }
 }
+Future<void> updateReview({
+  required int reviewId,
+  required String reviewText,
+  required int rating,
+}) async {
+  final token = await _getToken();
+  if (token == null) throw Exception('Oturum açılmamış.');
+
+  final response = await http.put(
+    Uri.parse('$_baseUrl/api/reviews/$reviewId'),
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': 'Bearer $token',
+    },
+    body: jsonEncode({
+      'reviewText': reviewText,
+      'rating': rating,
+    }),
+  );
+
+  if (response.statusCode != 200) {
+    throw Exception('Yorum güncellenemedi: ${response.statusCode}');
+  }
+}
 }
