@@ -41,6 +41,23 @@ class ReviewService {
     }
   }
 
+  Future<List<Review>> getMyReviews() async {
+    final token = await _getToken();
+    if (token == null) throw Exception('Oturum açılmamış.');
+
+    final response = await http.get(
+      Uri.parse('$_baseUrl/api/reviews/my'),
+      headers: {'Authorization': 'Bearer $token'},
+    );
+
+    if (response.statusCode == 200) {
+      final List data = jsonDecode(utf8.decode(response.bodyBytes));
+      return data.map((e) => Review.fromJson(e)).toList();
+    } else {
+      throw Exception('Yorumlar yüklenemedi.');
+    }
+  }
+
   Future<void> addReview({
     required int bookId,
     required String reviewText,

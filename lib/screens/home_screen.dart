@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import '../services/auth_service.dart';
 import '../services/book_service.dart';
-import '../services/user_service.dart';
+import 'profile_screen.dart';
 
 abstract final class _HomeColors {
   static const Color background = Color(0xFFF5FAF7);
@@ -28,6 +28,8 @@ class _HomeScreenState extends State<HomeScreen> {
   List<Book> _books = [];
   List<Book> _searchResults = [];
   bool _isLoading = true;
+  bool _isSearching = false;
+  int _searchRequestId = 0;
 
   static const List<String> _trendTags = [
     'Fantastik', 'Polisiye', 'Klasikler', 'Kişisel Gelişim', 'Bilim Kurgu',
@@ -54,14 +56,29 @@ class _HomeScreenState extends State<HomeScreen> {
 
   void _onSearchChanged() async {
     final query = _searchController.text.trim();
+    final currentRequestId = ++_searchRequestId;
+
     if (query.isEmpty) {
-      setState(() => _searchResults = []);
+      setState(() {
+        _searchResults = [];
+        _isSearching = false;
+      });
       return;
     }
+
+    setState(() => _isSearching = true);
+
     try {
       final results = await _bookService.getBooks(search: query);
-      setState(() => _searchResults = results);
-    } catch (e) {}
+      if (!mounted || currentRequestId != _searchRequestId) return;
+      setState(() {
+        _searchResults = results;
+        _isSearching = false;
+      });
+    } catch (_) {
+      if (!mounted || currentRequestId != _searchRequestId) return;
+      setState(() => _isSearching = false);
+    }
   }
 
   @override
@@ -91,12 +108,15 @@ class _HomeScreenState extends State<HomeScreen> {
       case 0: return _buildSearchHome();
       case 1: return _buildPlaceholderTab('AI önerileri', Icons.auto_awesome_outlined);
       case 2: return _buildPlaceholderTab('Kütüphane', Icons.menu_book_outlined);
-      case 3: return _buildProfileTab();
+      case 3: return ProfileScreen(onLogout: _logout);
       default: return _buildSearchHome();
     }
   }
 
   Widget _buildSearchHome() {
+    final hasQuery = _searchController.text.trim().isNotEmpty;
+    final listToShow = hasQuery ? _searchResults : _books;
+
     return CustomScrollView(
       slivers: [
         SliverToBoxAdapter(
@@ -105,81 +125,100 @@ class _HomeScreenState extends State<HomeScreen> {
             child: _buildSearchRow(),
           ),
         ),
-        SliverToBoxAdapter(
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
-            child: Text('Trend Aramalar',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: _HomeColors.darkText)),
-          ),
-        ),
-        SliverToBoxAdapter(
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(20, 12, 20, 0),
-            child: Wrap(
-              spacing: 8, runSpacing: 8,
-              children: _trendTags.map((t) => _TrendChip(
-                label: t,
-                onTap: () => _searchController.text = t,
-              )).toList(),
+        if (!hasQuery) ...[
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
+              child: Text('Trend Aramalar',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: _HomeColors.darkText)),
             ),
           ),
-        ),
-        SliverToBoxAdapter(
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(20, 28, 12, 0),
-            child: Row(
-              children: [
-                Expanded(child: Text('Senin için popüler',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: _HomeColors.darkText))),
-                TextButton(
-                  onPressed: () {},
-                  style: TextButton.styleFrom(foregroundColor: _HomeColors.mintAccent, padding: const EdgeInsets.symmetric(horizontal: 8)),
-                  child: const Text('Tümünü gör >'),
-                ),
-              ],
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(20, 12, 20, 0),
+              child: Wrap(
+                spacing: 8, runSpacing: 8,
+                children: _trendTags.map((t) => _TrendChip(
+                  label: t,
+                  onTap: () => _searchController.text = t,
+                )).toList(),
+              ),
             ),
           ),
-        ),
-        SliverToBoxAdapter(
-          child: SizedBox(
-            height: 268,
-            child: _isLoading
-              ? const Center(child: CircularProgressIndicator())
-              : _books.isEmpty
-                ? const Center(child: Text('Kitap bulunamadı'))
-                : ListView.separated(
-                    padding: const EdgeInsets.fromLTRB(20, 12, 20, 0),
-                    scrollDirection: Axis.horizontal,
-                    itemCount: _books.length > 10 ? 10 : _books.length,
-                    separatorBuilder: (_, __) => const SizedBox(width: 14),
-                    itemBuilder: (context, i) => _PopularBookCard(book: _books[i]),
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(20, 28, 12, 0),
+              child: Row(
+                children: [
+                  Expanded(child: Text('Senin için popüler',
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: _HomeColors.darkText))),
+                  TextButton(
+                    onPressed: () {},
+                    style: TextButton.styleFrom(foregroundColor: _HomeColors.mintAccent, padding: const EdgeInsets.symmetric(horizontal: 8)),
+                    child: const Text('Tümünü gör >'),
                   ),
+                ],
+              ),
+            ),
           ),
-        ),
+          SliverToBoxAdapter(
+            child: SizedBox(
+              height: 268,
+              child: _isLoading
+                ? const Center(child: CircularProgressIndicator())
+                : _books.isEmpty
+                  ? const Center(child: Text('Kitap bulunamadı'))
+                  : ListView.separated(
+                      padding: const EdgeInsets.fromLTRB(20, 12, 20, 0),
+                      scrollDirection: Axis.horizontal,
+                      itemCount: _books.length > 10 ? 10 : _books.length,
+                      separatorBuilder: (_, __) => const SizedBox(width: 14),
+                      itemBuilder: (context, i) => _PopularBookCard(book: _books[i]),
+                    ),
+            ),
+          ),
+        ],
         SliverToBoxAdapter(
           child: Padding(
             padding: const EdgeInsets.fromLTRB(20, 28, 20, 8),
             child: Text(
-              _searchResults.isEmpty && _searchController.text.isEmpty ? 'Tüm Kitaplar' : 'Arama Sonuçları',
+              hasQuery ? 'Arama Sonuclari' : 'Tum Kitaplar',
               style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: _HomeColors.darkText),
             ),
           ),
         ),
         SliverPadding(
           padding: const EdgeInsets.fromLTRB(20, 0, 20, 100),
-          sliver: SliverList(
-            delegate: SliverChildBuilderDelegate(
-              (context, index) {
-                final list = _searchController.text.isEmpty ? _books : _searchResults;
-                if (index >= list.length) return null;
-                return Padding(
-                  padding: const EdgeInsets.only(bottom: 12),
-                  child: _SearchResultRow(book: list[index]),
-                );
-              },
-              childCount: _searchController.text.isEmpty ? _books.length : _searchResults.length,
-            ),
-          ),
+          sliver: hasQuery && _isSearching
+              ? const SliverToBoxAdapter(
+                  child: Center(
+                    child: Padding(
+                      padding: EdgeInsets.all(20),
+                      child: CircularProgressIndicator(),
+                    ),
+                  ),
+                )
+              : hasQuery && _searchResults.isEmpty
+                  ? const SliverToBoxAdapter(
+                      child: Center(
+                        child: Padding(
+                          padding: EdgeInsets.all(20),
+                          child: Text('Sonuc bulunamadi', style: TextStyle(color: Color(0xFF6B7A85))),
+                        ),
+                      ),
+                    )
+                  : SliverList(
+                      delegate: SliverChildBuilderDelegate(
+                        (context, index) {
+                          if (index >= listToShow.length) return null;
+                          return Padding(
+                            padding: const EdgeInsets.only(bottom: 12),
+                            child: _SearchResultRow(book: listToShow[index]),
+                          );
+                        },
+                        childCount: listToShow.length,
+                      ),
+                    ),
         ),
       ],
     );
@@ -228,57 +267,6 @@ class _HomeScreenState extends State<HomeScreen> {
           Text(title, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600, color: _HomeColors.darkText)),
         ],
       ),
-    );
-  }
-
-  Widget _buildProfileTab() {
-    return FutureBuilder<UserProfile>(
-      future: UserService().getMyProfile(),
-      builder: (context, snapshot) {
-        return Padding(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              const SizedBox(height: 24),
-              Center(
-                child: Container(
-                  width: 80,
-                  height: 80,
-                  decoration: BoxDecoration(
-                    color: _HomeColors.purpleAccent.withValues(alpha: 0.2),
-                    shape: BoxShape.circle,
-                  ),
-                  child: const Icon(Icons.person_rounded, size: 48, color: _HomeColors.purpleAccent),
-                ),
-              ),
-              const SizedBox(height: 16),
-              Text(
-                snapshot.data?.username ?? '...',
-                textAlign: TextAlign.center,
-                style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w700, color: _HomeColors.darkText),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                snapshot.data?.email ?? '',
-                textAlign: TextAlign.center,
-                style: const TextStyle(fontSize: 14, color: _HomeColors.greyText),
-              ),
-              const Spacer(),
-              OutlinedButton.icon(
-                onPressed: _logout,
-                icon: const Icon(Icons.logout_rounded),
-                label: const Text('Çıkış yap'),
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: _HomeColors.darkText,
-                  padding: const EdgeInsets.symmetric(vertical: 14),
-                ),
-              ),
-              const SizedBox(height: 88),
-            ],
-          ),
-        );
-      },
     );
   }
 

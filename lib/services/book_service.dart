@@ -1,6 +1,5 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
-import 'package:shared_preferences/shared_preferences.dart';
 
 class Book {
   final int bookId;
@@ -46,8 +45,12 @@ class BookService {
   Future<List<Book>> getBooks({String? search, String? genre}) async {
     String url = '$_baseUrl/api/books';
     final params = <String>[];
-    if (search != null && search.isNotEmpty) params.add('search=$search');
-    if (genre != null && genre.isNotEmpty) params.add('genre=$genre');
+    if (search != null && search.isNotEmpty) {
+      params.add('search=${Uri.encodeQueryComponent(search)}');
+    }
+    if (genre != null && genre.isNotEmpty) {
+      params.add('genre=${Uri.encodeQueryComponent(genre)}');
+    }
     if (params.isNotEmpty) url += '?${params.join('&')}';
 
     final response = await http.get(Uri.parse(url));
