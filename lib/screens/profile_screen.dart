@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import '../services/review_service.dart';
 import '../services/user_service.dart';
+import 'edit_profile_screen.dart';
+import '../widgets/screen_header.dart';
 
 abstract final class _ProfileColors {
   static const Color background = Color(0xFFF5FAF7);
@@ -13,23 +15,54 @@ abstract final class _ProfileColors {
   static const Color chipUnselected = Color(0xFFF3F8F5);
 }
 
-class ProfileScreen extends StatelessWidget {
+class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key, required this.onLogout});
   final VoidCallback onLogout;
 
   @override
-  Widget build(BuildContext context) {
-    return FutureBuilder<List<dynamic>>(
-      future: Future.wait([
+  State<ProfileScreen> createState() => _ProfileScreenState();
+}
+
+class _ProfileScreenState extends State<ProfileScreen> {
+  Future<List<dynamic>>? _profileFuture;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadProfile();
+  }
+
+  void _loadProfile() {
+    setState(() {
+      _profileFuture = Future.wait([
         UserService().getMyProfile(),
         ReviewService().getMyReviews(),
-      ]),
+      ]);
+    });
+  }
+
+  Future<void> _openEditProfile(UserProfile user) async {
+    final updated = await Navigator.push<bool>(
+      context,
+      MaterialPageRoute(
+        builder: (_) => EditProfileScreen(profile: user),
+      ),
+    );
+    if (updated == true) _loadProfile();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return FutureBuilder<List<dynamic>>(
+      future: _profileFuture,
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Center(child: CircularProgressIndicator());
         }
         if (snapshot.hasError) {
-          return Center(child: Text('Profil bilgisi alınamadı. Lütfen tekrar deneyiniz.'));
+          return Center(
+            child: Text('Profil bilgisi alınamadı. Lütfen tekrar deneyiniz.'),
+          );
         }
 
         final user = snapshot.data?[0] as UserProfile?;
@@ -40,22 +73,16 @@ class ProfileScreen extends StatelessWidget {
         const favoriteGenres = ['Roman', 'Distopya', 'Felsefe'];
 
         return SingleChildScrollView(
-          padding: const EdgeInsets.fromLTRB(20, 16, 20, 120),
+          padding: const EdgeInsets.fromLTRB(0, 16, 0, 120),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Başlık
-              const Text(
-                'Profil',
-                style: TextStyle(
-                  fontSize: 28,
-                  fontWeight: FontWeight.w700,
-                  color: _ProfileColors.darkText,
-                ),
-              ),
-              const SizedBox(height: 16),
-
-              // Profil kartı
+              const ScreenHeader(title: 'Profilim'),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 20),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
               Container(
                 width: double.infinity,
                 decoration: BoxDecoration(
@@ -66,7 +93,6 @@ class ProfileScreen extends StatelessWidget {
                 padding: const EdgeInsets.fromLTRB(20, 24, 20, 20),
                 child: Column(
                   children: [
-                    // Avatar
                     Container(
                       width: 88,
                       height: 88,
@@ -78,15 +104,27 @@ class ProfileScreen extends StatelessWidget {
                           end: Alignment.bottomRight,
                         ),
                       ),
-                      child: const Icon(
-                        Icons.person_outline_rounded,
-                        size: 44,
-                        color: Colors.white,
-                      ),
+                      child: user?.avatarUrl != null && user!.avatarUrl!.isNotEmpty
+                          ? ClipOval(
+                              child: Image.network(
+                                user.avatarUrl!,
+                                width: 88,
+                                height: 88,
+                                fit: BoxFit.cover,
+                                errorBuilder: (_, __, ___) => const Icon(
+                                  Icons.person_outline_rounded,
+                                  size: 44,
+                                  color: Colors.white,
+                                ),
+                              ),
+                            )
+                          : const Icon(
+                              Icons.person_outline_rounded,
+                              size: 44,
+                              color: Colors.white,
+                            ),
                     ),
                     const SizedBox(height: 14),
-
-                    // İsim
                     Text(
                       user?.username ?? '...',
                       style: const TextStyle(
@@ -96,8 +134,6 @@ class ProfileScreen extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(height: 4),
-
-                    // Email
                     Text(
                       user?.email ?? '',
                       style: const TextStyle(
@@ -105,9 +141,19 @@ class ProfileScreen extends StatelessWidget {
                         color: _ProfileColors.greyText,
                       ),
                     ),
+                    if (user?.bio != null && user!.bio!.isNotEmpty) ...[
+                      const SizedBox(height: 12),
+                      Text(
+                        user.bio!,
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(
+                          fontSize: 14,
+                          color: _ProfileColors.greyText,
+                          height: 1.4,
+                        ),
+                      ),
+                    ],
                     const SizedBox(height: 20),
-
-                    // İstatistikler
                     Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
@@ -119,12 +165,10 @@ class ProfileScreen extends StatelessWidget {
                       ],
                     ),
                     const SizedBox(height: 20),
-
-                    // Profili Düzenle
                     SizedBox(
                       width: double.infinity,
                       child: OutlinedButton.icon(
-                        onPressed: () {},
+                        onPressed: user == null ? null : () => _openEditProfile(user),
                         icon: const Icon(Icons.edit_outlined, size: 16),
                         label: const Text('Profili Düzenle'),
                         style: OutlinedButton.styleFrom(
@@ -146,80 +190,81 @@ class ProfileScreen extends StatelessWidget {
                   ],
                 ),
               ),
-
               const SizedBox(height: 24),
-
-              // AI Tercihlerim
-              const Text(
-                'AI Tercihlerim',
-                style: TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.w700,
-                  color: _ProfileColors.darkText,
+                  ],
                 ),
               ),
-              const SizedBox(height: 16),
-
-              // Sevdiğim Temalar
-              const Text(
-                'Sevdiğim Temalar',
-                style: TextStyle(
-                  fontSize: 14,
-                  color: _ProfileColors.greyText,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-              const SizedBox(height: 10),
-              Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                children: likedThemes
-                    .map((t) => _ProfileChip(label: t, selected: true))
-                    .toList(),
-              ),
-
-              const SizedBox(height: 16),
-
-              // Favori Türlerim
-              const Text(
-                'Favori Türlerim',
-                style: TextStyle(
-                  fontSize: 14,
-                  color: _ProfileColors.greyText,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-              const SizedBox(height: 10),
-              Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                children: [
-                  ...favoriteGenres.map((g) => _ProfileChip(label: g, selected: false)),
-                  _ProfileChip(label: '+ Ekle', selected: false, isAdd: true),
-                ],
-              ),
-
-              const SizedBox(height: 28),
-
-              // Çıkış yap
-              SizedBox(
-                width: double.infinity,
-                child: OutlinedButton.icon(
-                  onPressed: onLogout,
-                  icon: const Icon(Icons.logout_rounded),
-                  label: const Text('Çıkış yap'),
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: _ProfileColors.darkText,
-                    side: const BorderSide(color: Color(0xFFE5EAEE)),
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(14),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 20),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'AI Tercihlerim',
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.w700,
+                        color: _ProfileColors.darkText,
+                      ),
                     ),
-                    textStyle: const TextStyle(
-                      fontSize: 15,
-                      fontWeight: FontWeight.w500,
+                    const SizedBox(height: 16),
+                    const Text(
+                      'Sevdiğim Temalar',
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: _ProfileColors.greyText,
+                        fontWeight: FontWeight.w500,
+                      ),
                     ),
-                  ),
+                    const SizedBox(height: 10),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: likedThemes
+                          .map((t) => _ProfileChip(label: t, selected: true))
+                          .toList(),
+                    ),
+                    const SizedBox(height: 16),
+                    const Text(
+                      'Favori Türlerim',
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: _ProfileColors.greyText,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: [
+                        ...favoriteGenres
+                            .map((g) => _ProfileChip(label: g, selected: false)),
+                        _ProfileChip(label: '+ Ekle', selected: false, isAdd: true),
+                      ],
+                    ),
+                    const SizedBox(height: 28),
+                    SizedBox(
+                      width: double.infinity,
+                      child: OutlinedButton.icon(
+                        onPressed: widget.onLogout,
+                        icon: const Icon(Icons.logout_rounded),
+                        label: const Text('Çıkış yap'),
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: _ProfileColors.darkText,
+                          side: const BorderSide(color: Color(0xFFE5EAEE)),
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(14),
+                          ),
+                          textStyle: const TextStyle(
+                            fontSize: 15,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ],

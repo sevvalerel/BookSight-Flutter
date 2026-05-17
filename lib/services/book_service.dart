@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import '../utils/api_error.dart';
 
 class Book {
   final int bookId;
@@ -58,17 +59,17 @@ class BookService {
     if (response.statusCode == 200) {
       final List data = jsonDecode(utf8.decode(response.bodyBytes));
       return data.map((e) => Book.fromJson(e)).toList();
-    } else {
-      throw Exception('Kitaplar yüklenemedi.');
     }
+
+    throw Exception(parseApiError(response));
   }
 
   Future<Book> getBookById(int id) async {
     final response = await http.get(Uri.parse('$_baseUrl/api/books/$id'));
     if (response.statusCode == 200) {
       return Book.fromJson(jsonDecode(utf8.decode(response.bodyBytes)));
-    } else {
-      throw Exception('Kitap bulunamadı.');
     }
+
+    throw Exception(parseApiError(response));
   }
 }

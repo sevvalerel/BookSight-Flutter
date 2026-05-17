@@ -4,6 +4,7 @@ import '../services/review_service.dart';
 import '../services/auth_service.dart';
 import '../widgets/book_cover.dart';
 import '../services/reading_status_service.dart';
+import '../widgets/screen_header.dart';
 
 abstract final class _DetailColors {
   static const Color background = Color(0xFFF5FAF7);
@@ -393,25 +394,30 @@ class _BookDetailScreenState extends State<BookDetailScreen> {
     final book = widget.book;
     return Scaffold(
       backgroundColor: _DetailColors.background,
-      appBar: AppBar(
-        backgroundColor: _DetailColors.background,
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_rounded, color: _DetailColors.darkText),
-          onPressed: () => Navigator.pop(context),
-        ),
-        title: Text(
-          book.title,
-          style: const TextStyle(
-            color: _DetailColors.darkText,
-            fontSize: 16,
-            fontWeight: FontWeight.w700,
+      body: Column(
+        children: [
+          SafeArea(
+            bottom: false,
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                IconButton(
+                  icon: const Icon(Icons.arrow_back_ios_rounded,
+                      color: _DetailColors.darkText),
+                  onPressed: () => Navigator.pop(context),
+                ),
+                Expanded(
+                  child: ScreenHeader(
+                    title: book.title,
+                    padding: const EdgeInsets.fromLTRB(0, 12, 20, 12),
+                    maxLines: 2,
+                  ),
+                ),
+              ],
+            ),
           ),
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-        ),
-      ),
-      body: SingleChildScrollView(
+          Expanded(
+            child: SingleChildScrollView(
         padding: const EdgeInsets.all(20),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -588,6 +594,9 @@ class _BookDetailScreenState extends State<BookDetailScreen> {
             const SizedBox(height: 40),
           ],
         ),
+      ),
+          ),
+        ],
       ),
     );
   }

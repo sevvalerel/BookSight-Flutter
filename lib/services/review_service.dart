@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
+import '../utils/api_error.dart';
 
 class Review {
   final int? reviewId;
@@ -36,9 +37,9 @@ class ReviewService {
     if (response.statusCode == 200) {
       final List data = jsonDecode(utf8.decode(response.bodyBytes));
       return data.map((e) => Review.fromJson(e)).toList();
-    } else {
-      throw Exception('Yorumlar yüklenemedi.');
     }
+
+    throw Exception(parseApiError(response));
   }
 
   Future<List<Review>> getMyReviews() async {
@@ -53,9 +54,9 @@ class ReviewService {
     if (response.statusCode == 200) {
       final List data = jsonDecode(utf8.decode(response.bodyBytes));
       return data.map((e) => Review.fromJson(e)).toList();
-    } else {
-      throw Exception('Yorumlar yüklenemedi.');
     }
+
+    throw Exception(parseApiError(response));
   }
 
   Future<void> addReview({
@@ -80,46 +81,48 @@ class ReviewService {
     );
 
     if (response.statusCode != 200) {
-      throw Exception('Yorum eklenemedi: ${response.statusCode}');
+      throw Exception(parseApiError(response));
     }
   }
+
   Future<void> deleteReview(int reviewId) async {
-  final token = await _getToken();
-  if (token == null) throw Exception('Oturum açılmamış.');
+    final token = await _getToken();
+    if (token == null) throw Exception('Oturum açılmamış.');
 
-  final response = await http.delete(
-    Uri.parse('$_baseUrl/api/reviews/$reviewId'),
-    headers: {
-      'Authorization': 'Bearer $token',
-    },
-  );
+    final response = await http.delete(
+      Uri.parse('$_baseUrl/api/reviews/$reviewId'),
+      headers: {
+        'Authorization': 'Bearer $token',
+      },
+    );
 
-  if (response.statusCode != 200) {
-    throw Exception('Yorum silinemedi: ${response.statusCode}');
+    if (response.statusCode != 200) {
+      throw Exception(parseApiError(response));
+    }
   }
-}
-Future<void> updateReview({
-  required int reviewId,
-  required String reviewText,
-  required int rating,
-}) async {
-  final token = await _getToken();
-  if (token == null) throw Exception('Oturum açılmamış.');
 
-  final response = await http.put(
-    Uri.parse('$_baseUrl/api/reviews/$reviewId'),
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': 'Bearer $token',
-    },
-    body: jsonEncode({
-      'reviewText': reviewText,
-      'rating': rating,
-    }),
-  );
+  Future<void> updateReview({
+    required int reviewId,
+    required String reviewText,
+    required int rating,
+  }) async {
+    final token = await _getToken();
+    if (token == null) throw Exception('Oturum açılmamış.');
 
-  if (response.statusCode != 200) {
-    throw Exception('Yorum güncellenemedi: ${response.statusCode}');
+    final response = await http.put(
+      Uri.parse('$_baseUrl/api/reviews/$reviewId'),
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer $token',
+      },
+      body: jsonEncode({
+        'reviewText': reviewText,
+        'rating': rating,
+      }),
+    );
+
+    if (response.statusCode != 200) {
+      throw Exception(parseApiError(response));
+    }
   }
-}
 }

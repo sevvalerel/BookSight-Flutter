@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
+import '../utils/api_error.dart';
 
 class LibraryEntry {
   final int bookId;
@@ -60,7 +61,7 @@ class ReadingStatusService {
     );
 
     if (response.statusCode != 200) {
-      throw Exception('Kütüphane güncellenemedi: ${response.statusCode}');
+      throw Exception(parseApiError(response));
     }
   }
 
@@ -76,9 +77,9 @@ class ReadingStatusService {
     if (response.statusCode == 200) {
       final List data = jsonDecode(utf8.decode(response.bodyBytes));
       return data.map((e) => LibraryEntry.fromJson(e)).toList();
-    } else {
-      throw Exception('Kütüphane yüklenemedi: ${response.statusCode}');
     }
+
+    throw Exception(parseApiError(response));
   }
 
   Future<void> remove(int bookId) async {
@@ -91,7 +92,7 @@ class ReadingStatusService {
     );
 
     if (response.statusCode != 200) {
-      throw Exception('Kitap kaldırılamadı: ${response.statusCode}');
+      throw Exception(parseApiError(response));
     }
   }
 }

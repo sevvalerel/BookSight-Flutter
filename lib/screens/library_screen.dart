@@ -208,22 +208,134 @@ class _LibraryScreenState extends State<LibraryScreen>
     );
   }
 
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text(
-          'Kütüphanem',
-          style: TextStyle(fontWeight: FontWeight.bold),
+  Widget _buildHeader() {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 52, 20, 16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              Text(
+                'KÜTÜPHANEm'.toUpperCase(),
+                style: const TextStyle(
+                  fontSize: 26,
+                  fontWeight: FontWeight.w700,
+                  fontStyle: FontStyle.italic,
+                  color: Color(0xFF2D4150),
+                  letterSpacing: 1.5,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Container(
+                  height: 2,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF6B4EFF),
+                    borderRadius: BorderRadius.circular(1),
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 6),
+          Text(
+            '${_allBooks.length} kitap',
+            style: const TextStyle(
+              fontSize: 13,
+              color: Color(0xFF6B7A85),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStatRow() {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 0, 20, 14),
+      child: Row(
+        children: [
+          _statPill(
+            '${_filterByStatus('READING').length}',
+            'Okuyorum',
+            const Color(0xFF0F6E56),
+            const Color(0xFFE1F5EE),
+          ),
+          const SizedBox(width: 10),
+          _statPill(
+            '${_filterByStatus('WILL_READ').length}',
+            'Okuyacağım',
+            const Color(0xFF534AB7),
+            const Color(0xFFEEEDFE),
+          ),
+          const SizedBox(width: 10),
+          _statPill(
+            '${_filterByStatus('READ').length}',
+            'Okudum',
+            const Color(0xFF3B6D11),
+            const Color(0xFFEAF3DE),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _statPill(String count, String label, Color textColor, Color bgColor) {
+    return Expanded(
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 10),
+        decoration: BoxDecoration(
+          color: bgColor,
+          borderRadius: BorderRadius.circular(12),
         ),
-        elevation: 0,
-        backgroundColor: Colors.white,
-        foregroundColor: Colors.black,
-        bottom: TabBar(
+        child: Column(
+          children: [
+            Text(
+              count,
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.w700,
+                color: textColor,
+              ),
+            ),
+            const SizedBox(height: 2),
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 10,
+                color: textColor.withValues(alpha: 0.8),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTabBar() {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 0, 20, 14),
+      child: Container(
+        padding: const EdgeInsets.all(4),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: const Color(0xFFE8EDE9), width: 0.5),
+        ),
+        child: TabBar(
           controller: _tabController,
-          labelColor: const Color(0xFF6B4EFF),
-          unselectedLabelColor: Colors.grey,
-          indicatorColor: const Color(0xFF6B4EFF),
+          indicator: BoxDecoration(
+            color: const Color(0xFF6B4EFF),
+            borderRadius: BorderRadius.circular(10),
+          ),
+          indicatorSize: TabBarIndicatorSize.tab,
+          dividerColor: Colors.transparent,
+          labelColor: Colors.white,
+          unselectedLabelColor: const Color(0xFF6B7A85),
+          labelStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+          unselectedLabelStyle: const TextStyle(fontSize: 12),
           tabs: const [
             Tab(text: 'Okuyorum'),
             Tab(text: 'Okuyacağım'),
@@ -231,12 +343,28 @@ class _LibraryScreenState extends State<LibraryScreen>
           ],
         ),
       ),
-      body: TabBarView(
-        controller: _tabController,
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: const Color(0xFFF5FAF7),
+      body: Column(
         children: [
-          _buildBookList(_filterByStatus('READING')),
-          _buildBookList(_filterByStatus('WILL_READ')),
-          _buildBookList(_filterByStatus('READ')),
+          _buildHeader(),
+          _buildStatRow(),
+          _buildTabBar(),
+          Expanded(
+            child: TabBarView(
+              controller: _tabController,
+              children: [
+                _buildBookList(_filterByStatus('READING')),
+                _buildBookList(_filterByStatus('WILL_READ')),
+                _buildBookList(_filterByStatus('READ')),
+              ],
+            ),
+          ),
         ],
       ),
     );
