@@ -28,6 +28,9 @@ class ProfileScreen extends StatelessWidget {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Center(child: CircularProgressIndicator());
         }
+        if (snapshot.hasError) {
+          return Center(child: Text('Profil bilgisi alınamadı. Lütfen tekrar deneyiniz.'));
+        }
 
         final user = snapshot.data?[0] as UserProfile?;
         final myReviews = snapshot.data?[1] as List<Review>?;

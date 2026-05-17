@@ -26,7 +26,7 @@ class UserProfile {
 }
 
 class UserService {
-  static const String _baseUrl = 'http://172.20.28.103:8080';
+  static const String _baseUrl = 'http://172.20.28.103:8080'; 
 
   Future<String?> _getToken() async {
     final prefs = await SharedPreferences.getInstance();

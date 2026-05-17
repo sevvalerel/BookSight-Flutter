@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import '../services/auth_service.dart';
 
-/// Light tema renk paleti (tasarım referansı).
+
 abstract final class _LoginColors {
   static const Color background = Color(0xFFF8FAF9);
   static const Color primaryGreen = Color(0xFF8BC3A3);

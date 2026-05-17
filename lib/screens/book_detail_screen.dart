@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import '../services/book_service.dart';
 import '../services/review_service.dart';
 import '../services/auth_service.dart';
+import '../widgets/book_cover.dart';
+import '../services/reading_status_service.dart';
 
 abstract final class _DetailColors {
   static const Color background = Color(0xFFF5FAF7);
@@ -28,6 +30,10 @@ class _BookDetailScreenState extends State<BookDetailScreen> {
   bool _isSubmitting = false;
   String? _currentUsername;
 
+  final _readingStatusService = ReadingStatusService();
+  String? _currentReadingStatus;
+  bool _isStatusLoading = false;
+
   final _reviewController = TextEditingController();
   int _selectedRating = 5;
 
@@ -36,11 +42,147 @@ class _BookDetailScreenState extends State<BookDetailScreen> {
     super.initState();
     _loadReviews();
     _loadCurrentUser();
+    _loadReadingStatus();
   }
 
   Future<void> _loadCurrentUser() async {
     final username = await AuthService().getUsername();
     setState(() => _currentUsername = username);
+  }
+
+  Future<void> _loadReadingStatus() async {
+    try {
+      final library = await _readingStatusService.getMyLibrary();
+      final found = library.where((b) => b.bookId == widget.book.bookId);
+      if (mounted) {
+        setState(() {
+          _currentReadingStatus =
+              found.isEmpty ? null : found.first.status;
+        });
+      }
+    } catch (_) {}
+  }
+
+  Future<void> _setReadingStatus(String status) async {
+    setState(() => _isStatusLoading = true);
+    try {
+      await _readingStatusService.addOrUpdate(widget.book.bookId, status);
+      setState(() => _currentReadingStatus = status);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('${_statusLabel(status)} olarak eklendi!')),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(e.toString().replaceAll('Exception: ', ''))),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isStatusLoading = false);
+    }
+  }
+
+  Future<void> _removeReadingStatus() async {
+    setState(() => _isStatusLoading = true);
+    try {
+      await _readingStatusService.remove(widget.book.bookId);
+      setState(() => _currentReadingStatus = null);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Kütüphaneden çıkarıldı.')),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(e.toString().replaceAll('Exception: ', ''))),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isStatusLoading = false);
+    }
+  }
+
+  String _statusLabel(String status) {
+    switch (status) {
+      case 'READING':
+        return 'Okuyorum';
+      case 'WILL_READ':
+        return 'Okuyacağım';
+      case 'READ':
+        return 'Okudum';
+      default:
+        return status;
+    }
+  }
+
+  void _showLibrarySheet() {
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (_) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const SizedBox(height: 8),
+            Container(
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: Colors.grey[300],
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            const SizedBox(height: 16),
+            const Text(
+              'Kütüphaneye Ekle',
+              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+            ),
+            const Divider(),
+            _sheetTile('Okuyorum', Icons.auto_stories, 'READING'),
+            _sheetTile('Okuyacağım', Icons.bookmark_outline, 'WILL_READ'),
+            _sheetTile('Okudum', Icons.check_circle_outline, 'READ'),
+            if (_currentReadingStatus != null) ...[
+              const Divider(),
+              ListTile(
+                leading: const Icon(Icons.delete_outline, color: Colors.red),
+                title: const Text(
+                  'Kütüphaneden Çıkar',
+                  style: TextStyle(color: Colors.red),
+                ),
+                onTap: () {
+                  Navigator.pop(context);
+                  _removeReadingStatus();
+                },
+              ),
+            ],
+            const SizedBox(height: 8),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _sheetTile(String label, IconData icon, String value) {
+    final isActive = _currentReadingStatus == value;
+    return ListTile(
+      leading: Icon(
+        icon,
+        color: isActive ? const Color(0xFF6B4EFF) : Colors.grey,
+      ),
+      title: Text(label),
+      trailing: isActive
+          ? const Icon(Icons.check, color: Color(0xFF6B4EFF))
+          : null,
+      onTap: () {
+        Navigator.pop(context);
+        if (!isActive) _setReadingStatus(value);
+      },
+    );
   }
 
   @override
@@ -277,20 +419,7 @@ class _BookDetailScreenState extends State<BookDetailScreen> {
             Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(12),
-                  child: book.coverUrl != null
-                    ? Image.network(
-                        book.coverUrl!,
-                        width: 100, height: 140,
-                        fit: BoxFit.cover,
-                        errorBuilder: (_, __, ___) => Container(
-                          width: 100, height: 140,
-                          color: _DetailColors.placeholderCover,
-                        ),
-                      )
-                    : Container(width: 100, height: 140, color: _DetailColors.placeholderCover),
-                ),
+                BookCover(coverUrl: book.coverUrl, width: 100, height: 140),
                 const SizedBox(width: 16),
                 Expanded(
                   child: Column(
@@ -349,6 +478,41 @@ class _BookDetailScreenState extends State<BookDetailScreen> {
                 overflow: TextOverflow.ellipsis),
             ],
 
+            const SizedBox(height: 16),
+            SizedBox(
+              width: double.infinity,
+              height: 48,
+              child: OutlinedButton.icon(
+                onPressed: _isStatusLoading ? null : _showLibrarySheet,
+                icon: _isStatusLoading
+                    ? const SizedBox(
+                        width: 16,
+                        height: 16,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : Icon(
+                        _currentReadingStatus != null
+                            ? Icons.library_books
+                            : Icons.library_add_outlined,
+                        color: const Color(0xFF6B4EFF),
+                      ),
+                label: Text(
+                  _currentReadingStatus != null
+                      ? _statusLabel(_currentReadingStatus!)
+                      : 'Kütüphaneye Ekle',
+                  style: const TextStyle(
+                    color: Color(0xFF6B4EFF),
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                style: OutlinedButton.styleFrom(
+                  side: const BorderSide(color: Color(0xFF6B4EFF)),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(24),
+                  ),
+                ),
+              ),
+            ),
             const SizedBox(height: 24),
             const Text('Yorum Ekle',
               style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: _DetailColors.darkText)),

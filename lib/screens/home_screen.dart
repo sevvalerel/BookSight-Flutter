@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../services/auth_service.dart';
 import '../services/book_service.dart';
+import 'library_screen.dart';
 import 'profile_screen.dart';
 
 abstract final class _HomeColors {
@@ -121,7 +122,7 @@ class _HomeScreenState extends State<HomeScreen> {
     switch (_navIndex) {
       case 0: return _buildSearchHome();
       case 1: return _buildPlaceholderTab('AI önerileri', Icons.auto_awesome_outlined);
-      case 2: return _buildPlaceholderTab('Kütüphane', Icons.menu_book_outlined);
+      case 2: return const LibraryScreen();
       case 3: return ProfileScreen(onLogout: _logout);
       default: return _buildSearchHome();
     }
