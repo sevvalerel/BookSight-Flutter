@@ -25,14 +25,18 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   int _navIndex = 0;
   final _searchController = TextEditingController();
+  final _scrollController = ScrollController();
   final _bookService = BookService();
+
   List<Book> _books = [];
   List<Book> _searchResults = [];
   bool _isLoading = true;
   bool _isSearching = false;
+  bool _isLoadingMore = false;
+  bool _hasNextPage = true;
+  int _currentPage = 0;
   String? _selectedGenre;
   int _searchRequestId = 0;
-  
 
   static const List<String> _trendTags = [
     'Roman', 'Klasik', 'Distopya', 'Bilim',
@@ -43,31 +47,77 @@ class _HomeScreenState extends State<HomeScreen> {
     super.initState();
     _loadBooks();
     _searchController.addListener(_onSearchChanged);
+    _scrollController.addListener(_onScroll);
   }
 
-  Future<void> _loadBooks() async {
-    try {
-      final books = await _bookService.getBooks();
+  @override
+  void dispose() {
+    _searchController.dispose();
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  void _onScroll() {
+    if (_scrollController.position.pixels >=
+        _scrollController.position.maxScrollExtent - 200) {
+      _loadMoreBooks();
+    }
+  }
+
+Future<void> _loadBooks({bool reset = false}) async {
+    if (reset) {
       setState(() {
-        _books = books;
+        _books = [];
+        _currentPage = 0;
+        _hasNextPage = true;
+      });
+    }
+    setState(() => _isLoading = true);
+    try {
+      final result = await _bookService.getBooks(
+        genre: _selectedGenre,
+        page: _currentPage,
+      );
+      setState(() {
+        _books.addAll(result['books'] as List<Book>);
+        _hasNextPage = result['hasNext'] as bool;
         _isLoading = false;
       });
     } catch (e) {
+      print('HATA: $e'); // ← bunu ekle
       setState(() => _isLoading = false);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Hata: $e')),
+        );
+      }
     }
   }
-  Future<void> _loadBooksByGenre(String? genre) async {
-  setState(() => _isLoading = true);
-  try {
-    final books = await _bookService.getBooks(genre: genre);
-    setState(() {
-      _books = books;
-      _isLoading = false;
-    });
-  } catch (e) {
-    setState(() => _isLoading = false);
+
+  Future<void> _loadMoreBooks() async {
+    if (_isLoadingMore || !_hasNextPage || _isSearching) return;
+    setState(() => _isLoadingMore = true);
+    try {
+      _currentPage++;
+      final result = await _bookService.getBooks(
+        genre: _selectedGenre,
+        page: _currentPage,
+      );
+      setState(() {
+        _books.addAll(result['books'] as List<Book>);
+        _hasNextPage = result['hasNext'] as bool;
+        _isLoadingMore = false;
+      });
+    } catch (e) {
+      _currentPage--;
+      setState(() => _isLoadingMore = false);
+    }
   }
-}
+
+  Future<void> _loadBooksByGenre(String? genre) async {
+    _selectedGenre = genre;
+    await _loadBooks(reset: true);
+  }
 
   void _onSearchChanged() async {
     final query = _searchController.text.trim();
@@ -84,22 +134,16 @@ class _HomeScreenState extends State<HomeScreen> {
     setState(() => _isSearching = true);
 
     try {
-      final results = await _bookService.getBooks(search: query);
+      final result = await _bookService.getBooks(search: query, size: 50);
       if (!mounted || currentRequestId != _searchRequestId) return;
       setState(() {
-        _searchResults = results;
+        _searchResults = result['books'] as List<Book>;
         _isSearching = false;
       });
     } catch (_) {
       if (!mounted || currentRequestId != _searchRequestId) return;
       setState(() => _isSearching = false);
     }
-  }
-
-  @override
-  void dispose() {
-    _searchController.dispose();
-    super.dispose();
   }
 
   Future<void> _logout() async {
@@ -133,6 +177,7 @@ class _HomeScreenState extends State<HomeScreen> {
     final listToShow = hasQuery ? _searchResults : _books;
 
     return CustomScrollView(
+      controller: _scrollController,
       slivers: [
         SliverToBoxAdapter(
           child: Padding(
@@ -176,7 +221,10 @@ class _HomeScreenState extends State<HomeScreen> {
                     style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: _HomeColors.darkText))),
                   TextButton(
                     onPressed: () {},
-                    style: TextButton.styleFrom(foregroundColor: _HomeColors.mintAccent, padding: const EdgeInsets.symmetric(horizontal: 8)),
+                    style: TextButton.styleFrom(
+                      foregroundColor: _HomeColors.mintAccent,
+                      padding: const EdgeInsets.symmetric(horizontal: 8),
+                    ),
                     child: const Text('Tümünü gör >'),
                   ),
                 ],
@@ -204,7 +252,7 @@ class _HomeScreenState extends State<HomeScreen> {
           child: Padding(
             padding: const EdgeInsets.fromLTRB(20, 28, 20, 8),
             child: Text(
-            hasQuery ? 'Arama Sonuçları' : 'Tüm Kitaplar',
+              hasQuery ? 'Arama Sonuçları' : 'Tüm Kitaplar',
               style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: _HomeColors.darkText),
             ),
           ),
@@ -225,7 +273,8 @@ class _HomeScreenState extends State<HomeScreen> {
                       child: Center(
                         child: Padding(
                           padding: EdgeInsets.all(20),
-                          child: Text('Sonuc bulunamadi', style: TextStyle(color: Color(0xFF6B7A85))),
+                          child: Text('Sonuç bulunamadı',
+                            style: TextStyle(color: Color(0xFF6B7A85))),
                         ),
                       ),
                     )
@@ -242,6 +291,13 @@ class _HomeScreenState extends State<HomeScreen> {
                       ),
                     ),
         ),
+        if (_isLoadingMore)
+          const SliverToBoxAdapter(
+            child: Padding(
+              padding: EdgeInsets.all(16),
+              child: Center(child: CircularProgressIndicator()),
+            ),
+          ),
       ],
     );
   }
@@ -255,12 +311,19 @@ class _HomeScreenState extends State<HomeScreen> {
             textInputAction: TextInputAction.search,
             decoration: InputDecoration(
               hintText: 'Kitap adı veya yazar',
-              hintStyle: TextStyle(color: _HomeColors.greyText.withValues(alpha: 0.8), fontSize: 15),
-              prefixIcon: Icon(Icons.search_rounded, color: _HomeColors.greyText.withValues(alpha: 0.85), size: 24),
+              hintStyle: TextStyle(
+                color: _HomeColors.greyText.withValues(alpha: 0.8),
+                fontSize: 15,
+              ),
+              prefixIcon: Icon(Icons.search_rounded,
+                color: _HomeColors.greyText.withValues(alpha: 0.85), size: 24),
               filled: true,
               fillColor: Colors.white,
               contentPadding: const EdgeInsets.symmetric(vertical: 14),
-              border: OutlineInputBorder(borderRadius: BorderRadius.circular(24), borderSide: BorderSide.none),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(24),
+                borderSide: BorderSide.none,
+              ),
             ),
           ),
         ),
@@ -271,8 +334,10 @@ class _HomeScreenState extends State<HomeScreen> {
           clipBehavior: Clip.antiAlias,
           child: InkWell(
             onTap: () {},
-            child: const SizedBox(width: 52, height: 52,
-              child: Icon(Icons.tune_rounded, color: Colors.white, size: 24)),
+            child: const SizedBox(
+              width: 52, height: 52,
+              child: Icon(Icons.tune_rounded, color: Colors.white, size: 24),
+            ),
           ),
         ),
       ],
@@ -286,7 +351,8 @@ class _HomeScreenState extends State<HomeScreen> {
         children: [
           Icon(icon, size: 48, color: _HomeColors.greyText),
           const SizedBox(height: 16),
-          Text(title, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600, color: _HomeColors.darkText)),
+          Text(title, style: const TextStyle(
+            fontSize: 18, fontWeight: FontWeight.w600, color: _HomeColors.darkText)),
         ],
       ),
     );
@@ -300,15 +366,23 @@ class _HomeScreenState extends State<HomeScreen> {
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(28),
-          boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.07), blurRadius: 20, offset: const Offset(0, 6))],
+          boxShadow: [BoxShadow(
+            color: Colors.black.withValues(alpha: 0.07),
+            blurRadius: 20,
+            offset: const Offset(0, 6),
+          )],
         ),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceAround,
           children: [
-            _NavItem(icon: Icons.search_rounded, label: 'Ara', selected: _navIndex == 0, onTap: () => setState(() => _navIndex = 0)),
-            _NavItem(icon: Icons.auto_awesome_rounded, label: 'AI', selected: _navIndex == 1, onTap: () => setState(() => _navIndex = 1)),
-            _NavItem(icon: Icons.menu_book_rounded, label: 'Kütüphane', selected: _navIndex == 2, onTap: () => setState(() => _navIndex = 2)),
-            _NavItem(icon: Icons.person_outline_rounded, label: 'Profil', selected: _navIndex == 3, onTap: () => setState(() => _navIndex = 3)),
+            _NavItem(icon: Icons.search_rounded, label: 'Ara',
+              selected: _navIndex == 0, onTap: () => setState(() => _navIndex = 0)),
+            _NavItem(icon: Icons.auto_awesome_rounded, label: 'AI',
+              selected: _navIndex == 1, onTap: () => setState(() => _navIndex = 1)),
+            _NavItem(icon: Icons.menu_book_rounded, label: 'Kütüphane',
+              selected: _navIndex == 2, onTap: () => setState(() => _navIndex = 2)),
+            _NavItem(icon: Icons.person_outline_rounded, label: 'Profil',
+              selected: _navIndex == 3, onTap: () => setState(() => _navIndex = 3)),
           ],
         ),
       ),
@@ -338,14 +412,11 @@ class _TrendChip extends StatelessWidget {
               color: selected ? _HomeColors.mintAccent : _HomeColors.chipBorder,
             ),
           ),
-          child: Text(
-            label,
-            style: TextStyle(
-              fontSize: 13,
-              fontWeight: FontWeight.w500,
-              color: selected ? Colors.white : _HomeColors.darkText,
-            ),
-          ),
+          child: Text(label, style: TextStyle(
+            fontSize: 13,
+            fontWeight: FontWeight.w500,
+            color: selected ? Colors.white : _HomeColors.darkText,
+          )),
         ),
       ),
     );
@@ -366,7 +437,10 @@ class _PopularBookCard extends StatelessWidget {
           decoration: BoxDecoration(
             color: Colors.white,
             borderRadius: BorderRadius.circular(22),
-            boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.06), blurRadius: 14, offset: const Offset(0, 4))],
+            boxShadow: [BoxShadow(
+              color: Colors.black.withValues(alpha: 0.06),
+              blurRadius: 14, offset: const Offset(0, 4),
+            )],
           ),
           padding: const EdgeInsets.all(10),
           child: Column(
@@ -378,21 +452,30 @@ class _PopularBookCard extends StatelessWidget {
                     ClipRRect(
                       borderRadius: BorderRadius.circular(16),
                       child: book.coverUrl != null
-                        ? Image.network(book.coverUrl!, width: double.infinity, fit: BoxFit.cover,
-                            errorBuilder: (_, __, ___) => Container(color: _HomeColors.placeholderCover))
-                        : Container(width: double.infinity, color: _HomeColors.placeholderCover),
+                        ? Image.network(book.coverUrl!,
+                            width: double.infinity, fit: BoxFit.cover,
+                            errorBuilder: (_, __, ___) =>
+                              Container(color: _HomeColors.placeholderCover))
+                        : Container(width: double.infinity,
+                            color: _HomeColors.placeholderCover),
                     ),
                     Positioned(
                       top: 6, right: 6,
                       child: Container(
                         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                        decoration: BoxDecoration(color: _HomeColors.purpleAccent, borderRadius: BorderRadius.circular(10)),
+                        decoration: BoxDecoration(
+                          color: _HomeColors.purpleAccent,
+                          borderRadius: BorderRadius.circular(10),
+                        ),
                         child: const Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            Icon(Icons.auto_awesome_rounded, color: Colors.white, size: 12),
+                            Icon(Icons.auto_awesome_rounded,
+                              color: Colors.white, size: 12),
                             SizedBox(width: 4),
-                            Text('AI önerisi', style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.w600)),
+                            Text('AI önerisi', style: TextStyle(
+                              color: Colors.white, fontSize: 10,
+                              fontWeight: FontWeight.w600)),
                           ],
                         ),
                       ),
@@ -402,26 +485,31 @@ class _PopularBookCard extends StatelessWidget {
               ),
               const SizedBox(height: 10),
               Text(book.title, maxLines: 2, overflow: TextOverflow.ellipsis,
-                style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: _HomeColors.darkText, height: 1.2)),
+                style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700,
+                  color: _HomeColors.darkText, height: 1.2)),
               const SizedBox(height: 4),
               Text(book.author, maxLines: 1, overflow: TextOverflow.ellipsis,
                 style: const TextStyle(fontSize: 12, color: _HomeColors.greyText)),
               const SizedBox(height: 6),
-              Row(
-                children: [
-                  const Icon(Icons.star_rounded, color: _HomeColors.star, size: 16),
-                  const SizedBox(width: 4),
-                  Text(
-                    book.avgRating != null ? book.avgRating!.toStringAsFixed(1) : '—',
-                    style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: _HomeColors.darkText),
-                  ),
-                  if (book.reviewCount != null)
-                    Expanded(
-                      child: Text(' • ${book.reviewCount} yorum', maxLines: 1, overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(fontSize: 11, color: _HomeColors.greyText)),
+              if (book.reviewCount != null && book.reviewCount! > 0)
+                Row(
+                  children: [
+                    const Icon(Icons.star_rounded, color: _HomeColors.star, size: 16),
+                    const SizedBox(width: 4),
+                    Text(
+                      book.avgRating != null
+                        ? book.avgRating!.toStringAsFixed(1) : '—',
+                      style: const TextStyle(fontSize: 12,
+                        fontWeight: FontWeight.w600, color: _HomeColors.darkText),
                     ),
-                ],
-              ),
+                    Expanded(
+                      child: Text(' • ${book.reviewCount} yorum',
+                        maxLines: 1, overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(fontSize: 11,
+                          color: _HomeColors.greyText)),
+                    ),
+                  ],
+                ),
             ],
           ),
         ),
@@ -442,7 +530,10 @@ class _SearchResultRow extends StatelessWidget {
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(18),
-          boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 10, offset: const Offset(0, 2))],
+          boxShadow: [BoxShadow(
+            color: Colors.black.withValues(alpha: 0.04),
+            blurRadius: 10, offset: const Offset(0, 2),
+          )],
         ),
         padding: const EdgeInsets.all(12),
         child: Row(
@@ -450,21 +541,29 @@ class _SearchResultRow extends StatelessWidget {
             ClipRRect(
               borderRadius: BorderRadius.circular(12),
               child: book.coverUrl != null
-                ? Image.network(book.coverUrl!, width: 56, height: 72, fit: BoxFit.cover,
-                    errorBuilder: (_, __, ___) => Container(width: 56, height: 72, color: _HomeColors.placeholderCover))
-                : Container(width: 56, height: 72, color: _HomeColors.placeholderCover),
+                ? Image.network(book.coverUrl!,
+                    width: 56, height: 72, fit: BoxFit.cover,
+                    errorBuilder: (_, __, ___) =>
+                      Container(width: 56, height: 72,
+                        color: _HomeColors.placeholderCover))
+                : Container(width: 56, height: 72,
+                    color: _HomeColors.placeholderCover),
             ),
             const SizedBox(width: 14),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(book.title, style: const TextStyle(fontWeight: FontWeight.w700, color: _HomeColors.darkText)),
+                  Text(book.title, style: const TextStyle(
+                    fontWeight: FontWeight.w700, color: _HomeColors.darkText)),
                   const SizedBox(height: 4),
-                  Text(book.author, style: TextStyle(fontSize: 12, color: _HomeColors.greyText.withValues(alpha: 0.95))),
+                  Text(book.author, style: TextStyle(
+                    fontSize: 12,
+                    color: _HomeColors.greyText.withValues(alpha: 0.95))),
                   if (book.genre != null) ...[
                     const SizedBox(height: 4),
-                    Text(book.genre!, style: const TextStyle(fontSize: 11, color: _HomeColors.greyText)),
+                    Text(book.genre!, style: const TextStyle(
+                      fontSize: 11, color: _HomeColors.greyText)),
                   ],
                 ],
               ),
@@ -477,7 +576,8 @@ class _SearchResultRow extends StatelessWidget {
 }
 
 class _NavItem extends StatelessWidget {
-  const _NavItem({required this.icon, required this.label, required this.selected, required this.onTap});
+  const _NavItem({required this.icon, required this.label,
+    required this.selected, required this.onTap});
   final IconData icon;
   final String label;
   final bool selected;
@@ -497,13 +597,19 @@ class _NavItem extends StatelessWidget {
             Container(
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
-                color: selected ? _HomeColors.mintAccent.withValues(alpha: 0.22) : Colors.transparent,
+                color: selected
+                  ? _HomeColors.mintAccent.withValues(alpha: 0.22)
+                  : Colors.transparent,
                 shape: BoxShape.circle,
               ),
               child: Icon(icon, color: color, size: 24),
             ),
             const SizedBox(height: 4),
-            Text(label, style: TextStyle(fontSize: 11, fontWeight: selected ? FontWeight.w700 : FontWeight.w500, color: color)),
+            Text(label, style: TextStyle(
+              fontSize: 11,
+              fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
+              color: color,
+            )),
           ],
         ),
       ),

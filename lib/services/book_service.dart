@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import 'package:shared_preferences/shared_preferences.dart';
 import '../utils/api_error.dart';
 
 class Book {
@@ -43,33 +44,59 @@ class Book {
 class BookService {
   static const String _baseUrl = 'http://172.20.28.103:8080';
 
-  Future<List<Book>> getBooks({String? search, String? genre}) async {
-    String url = '$_baseUrl/api/books';
-    final params = <String>[];
-    if (search != null && search.isNotEmpty) {
-      params.add('search=${Uri.encodeQueryComponent(search)}');
-    }
-    if (genre != null && genre.isNotEmpty) {
-      params.add('genre=${Uri.encodeQueryComponent(genre)}');
-    }
-    if (params.isNotEmpty) url += '?${params.join('&')}';
+  Future<String?> _getToken() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString('token');
+  }
 
-    final response = await http.get(Uri.parse(url));
+  Future<Map<String, dynamic>> getBooks({
+    String? search,
+    String? genre,
+    int page = 0,
+    int size = 20,
+  }) async {
+    final token = await _getToken();
+    final queryParams = <String, String>{
+      'page': page.toString(),
+      'size': size.toString(),
+    };
+    if (search != null && search.isNotEmpty) queryParams['search'] = search;
+    if (genre != null && genre.isNotEmpty) queryParams['genre'] = genre;
+
+    final uri = Uri.parse('$_baseUrl/api/books')
+        .replace(queryParameters: queryParams);
+
+    final response = await http.get(uri, headers: {
+      'Authorization': 'Bearer $token',
+      'Content-Type': 'application/json',
+    });
 
     if (response.statusCode == 200) {
-      final List data = jsonDecode(utf8.decode(response.bodyBytes));
-      return data.map((e) => Book.fromJson(e)).toList();
+      final data = jsonDecode(utf8.decode(response.bodyBytes));
+      final books = (data['content'] as List)
+          .map((e) => Book.fromJson(e))
+          .toList();
+      return {
+        'books': books,
+        'hasNext': data['hasNext'] ?? false,
+        'totalElements': data['totalElements'] ?? 0,
+      };
     }
-
     throw Exception(parseApiError(response));
   }
 
   Future<Book> getBookById(int id) async {
-    final response = await http.get(Uri.parse('$_baseUrl/api/books/$id'));
+    final token = await _getToken();
+    final response = await http.get(
+      Uri.parse('$_baseUrl/api/books/$id'),
+      headers: {
+        'Authorization': 'Bearer $token',
+        'Content-Type': 'application/json',
+      },
+    );
     if (response.statusCode == 200) {
       return Book.fromJson(jsonDecode(utf8.decode(response.bodyBytes)));
     }
-
     throw Exception(parseApiError(response));
   }
 }
