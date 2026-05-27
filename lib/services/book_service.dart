@@ -47,7 +47,7 @@ class BookService {
 
   Future<String?> _getToken() async {
     final prefs = await SharedPreferences.getInstance();
-    return prefs.getString('token');
+    return prefs.getString('jwt_token');
   }
 
   Future<Map<String, dynamic>> getBooks({

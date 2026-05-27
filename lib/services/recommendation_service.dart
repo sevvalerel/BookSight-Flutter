@@ -60,7 +60,30 @@ class RecommendationService {
     return prefs.getString('jwt_token');
   }
 
-  Future<List<BookRecommendation>> getRecommendations() async {
+  Future<Map<String, int>> reanalyze() async {
+    final token = await _getToken();
+    if (token == null) throw Exception('Oturum açılmamış.');
+
+    final response = await http.post(
+      Uri.parse('$_baseUrl/api/recommendations/reanalyze'),
+      headers: {
+        'Authorization': 'Bearer $token',
+        'Content-Type': 'application/json',
+      },
+    );
+
+    if (response.statusCode == 200) {
+      final data = jsonDecode(utf8.decode(response.bodyBytes));
+      return {
+        'total': data['total'] as int? ?? 0,
+        'processed': data['processed'] as int? ?? 0,
+      };
+    }
+
+    throw Exception(parseApiError(response));
+  }
+
+  Future<Map<String, dynamic>> getRecommendations() async {
     final token = await _getToken();
     if (token == null) throw Exception('Oturum açılmamış.');
 
@@ -73,8 +96,12 @@ class RecommendationService {
     );
 
     if (response.statusCode == 200) {
-      final List data = jsonDecode(utf8.decode(response.bodyBytes));
-      return data.map((e) => BookRecommendation.fromJson(e)).toList();
+      final data = jsonDecode(utf8.decode(response.bodyBytes));
+      final List recs = data['recommendations'] as List;
+      return {
+        'recommendations': recs.map((e) => BookRecommendation.fromJson(e)).toList(),
+        'analyzedReviews': data['analyzedReviews'] as int? ?? 0,
+      };
     }
 
     throw Exception(parseApiError(response));

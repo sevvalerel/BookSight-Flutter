@@ -6,11 +6,13 @@ class ScreenHeader extends StatelessWidget {
     required this.title,
     this.padding = const EdgeInsets.fromLTRB(20, 12, 20, 16),
     this.maxLines = 1,
+    this.fontSize = 26,
   });
 
   final String title;
   final EdgeInsetsGeometry padding;
   final int maxLines;
+  final double fontSize;
 
   @override
   Widget build(BuildContext context) {
@@ -24,8 +26,8 @@ class ScreenHeader extends StatelessWidget {
               title.toUpperCase(),
               maxLines: maxLines,
               overflow: TextOverflow.ellipsis,
-              style: const TextStyle(
-                fontSize: 26,
+              style: TextStyle(
+                fontSize: fontSize,
                 fontWeight: FontWeight.w700,
                 fontStyle: FontStyle.italic,
                 color: Color(0xFF2D4150),

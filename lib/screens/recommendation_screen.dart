@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../services/recommendation_service.dart';
+import '../widgets/screen_header.dart';
 
 abstract final class _RecommendationColors {
   static const Color background = Color(0xFFF5FAF7);
@@ -22,11 +23,20 @@ class _RecommendationScreenState extends State<RecommendationScreen> {
   bool _isLoading = true;
   String? _error;
   List<BookRecommendation> _recommendations = [];
+  int _analyzedReviews = 0;
 
   @override
   void initState() {
     super.initState();
     _loadRecommendations();
+  }
+
+  Future<void> _reanalyzeAndRefresh() async {
+    setState(() => _isLoading = true);
+    try {
+      await _recommendationService.reanalyze();
+    } catch (_) {}
+    await _loadRecommendations();
   }
 
   Future<void> _loadRecommendations() async {
@@ -39,7 +49,8 @@ class _RecommendationScreenState extends State<RecommendationScreen> {
       final data = await _recommendationService.getRecommendations();
       if (!mounted) return;
       setState(() {
-        _recommendations = data;
+        _recommendations = data['recommendations'] as List<BookRecommendation>;
+        _analyzedReviews = data['analyzedReviews'] as int;
         _isLoading = false;
       });
     } catch (e) {
@@ -63,19 +74,16 @@ class _RecommendationScreenState extends State<RecommendationScreen> {
           child: ListView(
             padding: const EdgeInsets.fromLTRB(20, 16, 20, 120),
             children: [
-              const Text(
-                'Sana Özel',
-                style: TextStyle(
-                  fontSize: 36,
-                  fontWeight: FontWeight.w800,
-                  color: _RecommendationColors.darkText,
-                ),
+              const ScreenHeader(
+                title: 'Sana Özel',
+                padding: EdgeInsets.zero,
+                fontSize: 23,
               ),
               const SizedBox(height: 4),
               const Text(
                 'Yorumların analiz edilerek önerildi',
                 style: TextStyle(
-                  fontSize: 16,
+                  fontSize: 13,
                   color: _RecommendationColors.greyText,
                 ),
               ),
@@ -85,9 +93,11 @@ class _RecommendationScreenState extends State<RecommendationScreen> {
               const Text(
                 'Önerilen Kitaplar',
                 style: TextStyle(
-                  fontSize: 28,
-                  fontWeight: FontWeight.w800,
+                  fontSize: 20,
+                  fontWeight: FontWeight.w700,
+                  fontStyle: FontStyle.italic,
                   color: _RecommendationColors.darkText,
+                  letterSpacing: 1.2,
                 ),
               ),
               const SizedBox(height: 14),
@@ -110,11 +120,11 @@ class _RecommendationScreenState extends State<RecommendationScreen> {
   }
 
   Widget _buildInsightCard() {
-    final completed = _recommendations.length;
+    final completed = _analyzedReviews;
     final progress = completed == 0 ? 0.0 : (completed / 10).clamp(0.1, 1.0);
 
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(26),
         gradient: const LinearGradient(
@@ -129,19 +139,19 @@ class _RecommendationScreenState extends State<RecommendationScreen> {
           Row(
             children: [
               Container(
-                width: 46,
-                height: 46,
+                width: 40,
+                height: 40,
                 decoration: BoxDecoration(
                   color: Colors.white.withValues(alpha: 0.28),
-                  borderRadius: BorderRadius.circular(14),
+                  borderRadius: BorderRadius.circular(12),
                 ),
                 child: const Icon(
                   Icons.auto_awesome_rounded,
                   color: Colors.white,
-                  size: 24,
+                  size: 21,
                 ),
               ),
-              const SizedBox(width: 10),
+              const SizedBox(width: 8),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -150,7 +160,7 @@ class _RecommendationScreenState extends State<RecommendationScreen> {
                       'Profilin Hazır!',
                       style: TextStyle(
                         color: Colors.white,
-                        fontSize: 30,
+                        fontSize: 22,
                         fontWeight: FontWeight.w800,
                       ),
                     ),
@@ -158,7 +168,7 @@ class _RecommendationScreenState extends State<RecommendationScreen> {
                       '$completed/10 kitap değerlendirildi',
                       style: const TextStyle(
                         color: Colors.white,
-                        fontSize: 13,
+                        fontSize: 12,
                         fontWeight: FontWeight.w700,
                       ),
                     ),
@@ -167,17 +177,17 @@ class _RecommendationScreenState extends State<RecommendationScreen> {
               ),
             ],
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 10),
           ClipRRect(
             borderRadius: BorderRadius.circular(20),
             child: LinearProgressIndicator(
               value: progress,
-              minHeight: 8,
+              minHeight: 6,
               backgroundColor: Colors.white.withValues(alpha: 0.26),
               valueColor: const AlwaysStoppedAnimation<Color>(Colors.white),
             ),
           ),
-          const SizedBox(height: 10),
+          const SizedBox(height: 8),
           Text(
             completed >= 10
                 ? 'Harika! AI profili hazır.'
@@ -185,17 +195,17 @@ class _RecommendationScreenState extends State<RecommendationScreen> {
             style: const TextStyle(
               color: Colors.white,
               fontWeight: FontWeight.w700,
-              fontSize: 13,
+              fontSize: 12,
             ),
           ),
-          const SizedBox(height: 14),
+          const SizedBox(height: 10),
           Row(
             children: [
               Expanded(
                 child: SizedBox(
-                  height: 44,
+                  height: 40,
                   child: OutlinedButton(
-                    onPressed: () {},
+                    onPressed: _reanalyzeAndRefresh,
                     style: OutlinedButton.styleFrom(
                       side: const BorderSide(color: Color(0xFF8B88FF), width: 2),
                       shape: RoundedRectangleBorder(
@@ -216,8 +226,8 @@ class _RecommendationScreenState extends State<RecommendationScreen> {
               ),
               const SizedBox(width: 10),
               SizedBox(
-                width: 44,
-                height: 44,
+                width: 40,
+                height: 40,
                 child: FilledButton(
                   onPressed: _loadRecommendations,
                   style: FilledButton.styleFrom(
@@ -293,7 +303,7 @@ class _RecommendationBookCard extends StatelessWidget {
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                       style: const TextStyle(
-                        fontSize: 18,
+                        fontSize: 16,
                         fontWeight: FontWeight.w800,
                         color: _RecommendationColors.darkText,
                       ),
@@ -302,7 +312,7 @@ class _RecommendationBookCard extends StatelessWidget {
                     Text(
                       item.author,
                       style: const TextStyle(
-                        fontSize: 16,
+                        fontSize: 14,
                         color: _RecommendationColors.greyText,
                       ),
                     ),
@@ -329,20 +339,21 @@ class _RecommendationBookCard extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 10),
-          Row(
+          Wrap(
+            spacing: 6,
+            runSpacing: 6,
             children: [
               if (item.genre != null)
-                _PillChip(label: item.genre!, color: _RecommendationColors.mintAccent),
-              const SizedBox(width: 6),
-              ...item.detectedLabels.take(2).map(
-                    (e) => Padding(
-                      padding: const EdgeInsets.only(right: 6),
-                      child: _PillChip(
-                        label: e.replaceAll('_', ' '),
-                        color: const Color(0xFF9B8FD1),
-                      ),
-                    ),
-                  ),
+                _PillChip(
+                  label: item.genre!,
+                  color: _RecommendationColors.mintAccent,
+                ),
+              ...item.detectedLabels.map(
+                (e) => _PillChip(
+                  label: e.replaceAll('_', ' '),
+                  color: const Color(0xFF9B8FD1),
+                ),
+              ),
             ],
           ),
           const SizedBox(height: 12),

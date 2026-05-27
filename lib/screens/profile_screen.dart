@@ -61,7 +61,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
         }
         if (snapshot.hasError) {
           return Center(
-            child: Text('Profil bilgisi alınamadı. Lütfen tekrar deneyiniz.'),
+            child: Padding(
+              padding: const EdgeInsets.all(20),
+              child: Text('Hata: ${snapshot.error}'),
+            ),
           );
         }
 
