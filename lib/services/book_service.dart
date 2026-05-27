@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
+import '../config/api_config.dart';
 import '../utils/api_error.dart';
 
 class Book {
@@ -42,7 +43,7 @@ class Book {
 }
 
 class BookService {
-  static const String _baseUrl = 'http://172.20.28.103:8080';
+  static const String _baseUrl = ApiConfig.baseUrl;
 
   Future<String?> _getToken() async {
     final prefs = await SharedPreferences.getInstance();

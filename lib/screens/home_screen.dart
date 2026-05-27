@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../services/auth_service.dart';
 import '../services/book_service.dart';
+import 'recommendation_screen.dart';
 import 'library_screen.dart';
 import 'profile_screen.dart';
 
@@ -165,7 +166,7 @@ Future<void> _loadBooks({bool reset = false}) async {
   Widget _bodyForNav() {
     switch (_navIndex) {
       case 0: return _buildSearchHome();
-      case 1: return _buildPlaceholderTab('AI önerileri', Icons.auto_awesome_outlined);
+      case 1: return const RecommendationScreen();
       case 2: return const LibraryScreen();
       case 3: return ProfileScreen(onLogout: _logout);
       default: return _buildSearchHome();
@@ -341,20 +342,6 @@ Future<void> _loadBooks({bool reset = false}) async {
           ),
         ),
       ],
-    );
-  }
-
-  Widget _buildPlaceholderTab(String title, IconData icon) {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(icon, size: 48, color: _HomeColors.greyText),
-          const SizedBox(height: 16),
-          Text(title, style: const TextStyle(
-            fontSize: 18, fontWeight: FontWeight.w600, color: _HomeColors.darkText)),
-        ],
-      ),
     );
   }
 

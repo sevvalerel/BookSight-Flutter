@@ -1,10 +1,11 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
+import '../config/api_config.dart';
 import '../utils/api_error.dart';
 
 class AuthService {
-  static const String _baseUrl = 'http://172.20.28.103:8080';
+  static const String _baseUrl = ApiConfig.baseUrl;
 
   Future<String> login(String email, String password) async {
     final url = Uri.parse('$_baseUrl/api/auth/login');
@@ -13,7 +14,7 @@ class AuthService {
       url,
       headers: {'Content-Type': 'application/json'},
       body: jsonEncode({'email': email, 'password': password}),
-    );
+    ).timeout(const Duration(seconds: 10));
 
     if (response.statusCode == 200) {
       final data = jsonDecode(utf8.decode(response.bodyBytes));

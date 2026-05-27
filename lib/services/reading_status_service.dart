@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
+import '../config/api_config.dart';
 import '../utils/api_error.dart';
 
 class LibraryEntry {
@@ -33,7 +34,7 @@ class LibraryEntry {
 }
 
 class ReadingStatusService {
-  static const String _baseUrl = 'http://172.20.28.103:8080';
+  static const String _baseUrl = ApiConfig.baseUrl;
 
   static const String statusReading = 'READING';
   static const String statusWillRead = 'WILL_READ';
