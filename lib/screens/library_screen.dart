@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import '../services/reading_status_service.dart';
 import '../widgets/book_cover.dart';
+import '../navigation/app_page_route.dart';
+import '../services/book_service.dart';
+import 'book_detail_screen.dart';
 
 class LibraryScreen extends StatefulWidget {
   const LibraryScreen({super.key});
@@ -169,7 +172,7 @@ class _LibraryScreenState extends State<LibraryScreen>
     return RefreshIndicator(
       onRefresh: _loadLibrary,
       child: ListView.builder(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.fromLTRB(16, 16, 16, 110),
         itemCount: books.length,
         itemBuilder: (context, index) {
           final book = books[index];
@@ -182,6 +185,21 @@ class _LibraryScreenState extends State<LibraryScreen>
             ),
             child: ListTile(
               contentPadding: const EdgeInsets.all(12),
+              onTap: () {
+                Navigator.push(
+                  context,
+                  AppPageRoute(
+                    page: BookDetailScreen(
+                      book: Book(
+                        bookId: book.bookId,
+                        title: book.title,
+                        author: book.author,
+                        coverUrl: book.coverUrl,
+                      ),
+                    ),
+                  ),
+                );
+              },
               leading: BookCover(
                 coverUrl: book.coverUrl,
                 width: 50,
@@ -218,13 +236,12 @@ class _LibraryScreenState extends State<LibraryScreen>
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               Text(
-                'KÜTÜPHANEm'.toUpperCase(),
+                'Kütüphanem',
                 style: const TextStyle(
                   fontSize: 26,
-                  fontWeight: FontWeight.w700,
-                  fontStyle: FontStyle.italic,
+                  fontWeight: FontWeight.w800,
                   color: Color(0xFF2D4150),
-                  letterSpacing: 1.5,
+                  letterSpacing: -0.5,
                 ),
               ),
               const SizedBox(width: 12),
@@ -252,7 +269,7 @@ class _LibraryScreenState extends State<LibraryScreen>
     );
   }
 
-  Widget _buildStatRow() {
+Widget _buildStatRow() {
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 0, 20, 14),
       child: Row(
@@ -337,9 +354,9 @@ class _LibraryScreenState extends State<LibraryScreen>
           labelStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
           unselectedLabelStyle: const TextStyle(fontSize: 12),
           tabs: const [
+            Tab(text: 'Okudum'),
             Tab(text: 'Okuyorum'),
             Tab(text: 'Okuyacağım'),
-            Tab(text: 'Okudum'),
           ],
         ),
       ),
@@ -359,9 +376,9 @@ class _LibraryScreenState extends State<LibraryScreen>
             child: TabBarView(
               controller: _tabController,
               children: [
+                _buildBookList(_filterByStatus('READ')),
                 _buildBookList(_filterByStatus('READING')),
                 _buildBookList(_filterByStatus('WILL_READ')),
-                _buildBookList(_filterByStatus('READ')),
               ],
             ),
           ),

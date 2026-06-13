@@ -83,14 +83,6 @@ class _RecommendationScreenState extends State<RecommendationScreen> {
                 padding: EdgeInsets.zero,
                 fontSize: 23,
               ),
-              const SizedBox(height: 4),
-              const Text(
-                'Yorumların analiz edilerek önerildi',
-                style: TextStyle(
-                  fontSize: 13,
-                  color: _RecommendationColors.greyText,
-                ),
-              ),
               const SizedBox(height: 18),
               _buildInsightCard(),
               const SizedBox(height: 20),
@@ -161,7 +153,7 @@ class _RecommendationScreenState extends State<RecommendationScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     const Text(
-                      'Profilin Hazır!',
+                      'Profilin Hazır',
                       style: TextStyle(
                         color: Colors.white,
                         fontSize: 22,
@@ -196,7 +188,7 @@ class _RecommendationScreenState extends State<RecommendationScreen> {
           const SizedBox(height: 8),
           Text(
             completed >= 10
-                ? 'Harika! AI profili hazır.'
+                ? 'Öneriler senin zevkine göre kişiselleştirildi.'
                 : 'Daha iyi öneriler için ${10 - completed} kitap daha puanla',
             style: const TextStyle(
               color: Colors.white,

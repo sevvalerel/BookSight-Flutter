@@ -28,16 +28,15 @@ class ScreenHeader extends StatelessWidget {
             child: ConstrainedBox(
               constraints: BoxConstraints(maxWidth: constraints.maxWidth),
               child: Text(
-                title.toUpperCase(),
+                title,
                 maxLines: maxLines,
                 overflow: TextOverflow.ellipsis,
                 softWrap: true,
                 style: TextStyle(
                   fontSize: fontSize,
-                  fontWeight: FontWeight.w700,
-                  fontStyle: FontStyle.italic,
+                  fontWeight: FontWeight.w800,
                   color: const Color(0xFF2D4150),
-                  letterSpacing: 1.5,
+                  letterSpacing: -0.5,
                   height: isMultiLine ? 1.25 : null,
                 ),
               ),

@@ -83,4 +83,31 @@ class AuthService {
     final prefs = await SharedPreferences.getInstance();
     return prefs.getString('username');
   }
+  Future<String> forgotPassword(String email) async {
+    final url = Uri.parse('$_baseUrl/api/auth/forgot-password');
+    final response = await http.post(
+      url,
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({'email': email}),
+    ).timeout(const Duration(seconds: 15));
+    if (response.statusCode == 200) {
+      final data = jsonDecode(utf8.decode(response.bodyBytes));
+      return data['message'] as String;
+    }
+    throw Exception(parseApiError(response));
+  }
+
+  Future<String> resetPassword(String code, String newPassword) async {
+    final url = Uri.parse('$_baseUrl/api/auth/reset-password');
+    final response = await http.post(
+      url,
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({'code': code, 'newPassword': newPassword}),
+    ).timeout(const Duration(seconds: 10));
+    if (response.statusCode == 200) {
+      final data = jsonDecode(utf8.decode(response.bodyBytes));
+      return data['message'] as String;
+    }
+    throw Exception(parseApiError(response));
+  }
 }

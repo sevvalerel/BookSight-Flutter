@@ -153,10 +153,61 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
               decoration: _inputDecoration('Biyografi'),
             ),
             const SizedBox(height: 16),
-            TextFormField(
-              controller: _avatarUrlController,
-              decoration: _inputDecoration('Avatar URL (isteğe bağlı)'),
-              keyboardType: TextInputType.url,
+            const Align(
+              alignment: Alignment.centerLeft,
+              child: Text(
+                'Avatar Seç',
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                  color: _EditProfileColors.darkText,
+                ),
+              ),
+            ),
+            const SizedBox(height: 10),
+            Wrap(
+              spacing: 12,
+              runSpacing: 12,
+              children: _avatarPresets.map((url) {
+                final isSelected = _avatarUrlController.text == url;
+                return GestureDetector(
+                  onTap: () => setState(() => _avatarUrlController.text = url),
+                  child: Container(
+                    width: 60,
+                    height: 60,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                        color: isSelected
+                            ? _EditProfileColors.mintAccent
+                            : Colors.transparent,
+                        width: 3,
+                      ),
+                    ),
+                    child: ClipOval(
+                      child: Image.network(
+                        url,
+                        fit: BoxFit.cover,
+                        loadingBuilder: (context, child, progress) =>
+                            progress == null
+                                ? child
+                                : const Center(
+                                    child: SizedBox(
+                                      width: 18,
+                                      height: 18,
+                                      child: CircularProgressIndicator(
+                                          strokeWidth: 2),
+                                    ),
+                                  ),
+                        errorBuilder: (_, __, ___) => const Icon(
+                          Icons.person_outline_rounded,
+                          color: _EditProfileColors.greyText,
+                        ),
+                      ),
+                    ),
+                  ),
+                );
+              }).toList(),
             ),
             const SizedBox(height: 24),
             InkWell(
@@ -260,3 +311,13 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     );
   }
 }
+const List<String> _avatarPresets = [
+  'https://api.dicebear.com/7.x/avataaars/png?seed=Felix',
+  'https://api.dicebear.com/7.x/avataaars/png?seed=Aneka',
+  'https://api.dicebear.com/7.x/avataaars/png?seed=Milo',
+  'https://api.dicebear.com/7.x/avataaars/png?seed=Zoe',
+  'https://api.dicebear.com/7.x/avataaars/png?seed=Leo',
+  'https://api.dicebear.com/7.x/avataaars/png?seed=Nina',
+  'https://api.dicebear.com/7.x/avataaars/png?seed=Max',
+  'https://api.dicebear.com/7.x/avataaars/png?seed=Luna',
+];

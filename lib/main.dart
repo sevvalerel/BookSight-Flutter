@@ -8,6 +8,7 @@ import 'screens/splash_screen.dart';
 
 import 'screens/book_detail_screen.dart';
 import 'services/book_service.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 void main() {
   runApp(const BookSightApp());
@@ -26,6 +27,7 @@ class BookSightApp extends StatelessWidget {
           seedColor: const Color(0xFF8BC3A3),
           brightness: Brightness.light,
         ),
+        textTheme: GoogleFonts.poppinsTextTheme(),
         useMaterial3: true,
       ),
       initialRoute: '/splash',

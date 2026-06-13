@@ -2,10 +2,10 @@ import 'package:flutter/material.dart';
 import '../navigation/app_page_route.dart';
 import '../services/review_service.dart';
 import '../services/user_service.dart';
+import '../services/stats_service.dart';
 import 'edit_profile_screen.dart';
 import 'reading_stats_screen.dart';
 import '../widgets/screen_header.dart';
-import '../services/stats_service.dart';
 
 abstract final class _ProfileColors {
   static const Color background = Color(0xFFF5FAF7);
@@ -36,14 +36,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   void _loadProfile() {
-      setState(() {
-        _profileFuture = Future.wait([
-          UserService().getMyProfile(),
-          ReviewService().getMyReviews(),
-          StatsService().getMyStats(),
-        ]);
-      });
-    }
+    setState(() {
+      _profileFuture = Future.wait([
+        UserService().getMyProfile(),
+        ReviewService().getMyReviews(),
+        StatsService().getMyStats(),
+      ]);
+    });
+  }
 
   Future<void> _openEditProfile(UserProfile user) async {
     final updated = await Navigator.push<bool>(
@@ -80,14 +80,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
         }
 
         final user = snapshot.data?[0] as UserProfile?;
-                final myReviews = snapshot.data?[1] as List<Review>?;
-                final stats = snapshot.data?[2] as ReadingStats?;
-                final reviewCount = myReviews?.length ?? 0;
-                final likedThemes = stats?.topThemes ?? <String>[];
-                final favoriteGenres = stats?.genreDistribution
-                        .map((g) => g.genre)
-                        .toList() ??
-                    <String>[];
+        final myReviews = snapshot.data?[1] as List<Review>?;
+        final stats = snapshot.data?[2] as ReadingStats?;
+        final reviewCount = myReviews?.length ?? 0;
+
+        final likedThemes = stats?.topThemes ?? <String>[];
+        final favoriteGenres =
+            stats?.genreDistribution.map((g) => g.genre).toList() ??
+                <String>[];
 
         return SingleChildScrollView(
           padding: const EdgeInsets.fromLTRB(0, 16, 0, 120),
@@ -100,145 +100,145 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-              Container(
-                width: double.infinity,
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(24),
-                  border: Border.all(color: _ProfileColors.chipBorder),
-                ),
-                padding: const EdgeInsets.fromLTRB(20, 24, 20, 20),
-                child: Column(
-                  children: [
                     Container(
-                      width: 88,
-                      height: 88,
-                      decoration: const BoxDecoration(
-                        shape: BoxShape.circle,
-                        gradient: LinearGradient(
-                          colors: [Color(0xFF8BC3A3), Color(0xFF9B8FD1)],
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                        ),
+                      width: double.infinity,
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(24),
+                        border: Border.all(color: _ProfileColors.chipBorder),
                       ),
-                      child: user?.avatarUrl != null && user!.avatarUrl!.isNotEmpty
-                          ? ClipOval(
-                              child: Image.network(
-                                user.avatarUrl!,
-                                width: 88,
-                                height: 88,
-                                fit: BoxFit.cover,
-                                errorBuilder: (_, __, ___) => const Icon(
-                                  Icons.person_outline_rounded,
-                                  size: 44,
-                                  color: Colors.white,
+                      padding: const EdgeInsets.fromLTRB(20, 24, 20, 20),
+                      child: Column(
+                        children: [
+                          Container(
+                            width: 88,
+                            height: 88,
+                            decoration: const BoxDecoration(
+                              shape: BoxShape.circle,
+                              gradient: LinearGradient(
+                                colors: [Color(0xFF8BC3A3), Color(0xFF9B8FD1)],
+                                begin: Alignment.topLeft,
+                                end: Alignment.bottomRight,
+                              ),
+                            ),
+                            child: user?.avatarUrl != null &&
+                                    user!.avatarUrl!.isNotEmpty
+                                ? ClipOval(
+                                    child: Image.network(
+                                      user.avatarUrl!,
+                                      width: 88,
+                                      height: 88,
+                                      fit: BoxFit.cover,
+                                      errorBuilder: (_, __, ___) => const Icon(
+                                        Icons.person_outline_rounded,
+                                        size: 44,
+                                        color: Colors.white,
+                                      ),
+                                    ),
+                                  )
+                                : const Icon(
+                                    Icons.person_outline_rounded,
+                                    size: 44,
+                                    color: Colors.white,
+                                  ),
+                          ),
+                          const SizedBox(height: 14),
+                          Text(
+                            user?.username ?? '...',
+                            style: const TextStyle(
+                              fontSize: 22,
+                              fontWeight: FontWeight.w700,
+                              color: _ProfileColors.darkText,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            user?.email ?? '',
+                            style: const TextStyle(
+                              fontSize: 14,
+                              color: _ProfileColors.greyText,
+                            ),
+                          ),
+                          if (user?.bio != null && user!.bio!.isNotEmpty) ...[
+                            const SizedBox(height: 12),
+                            Text(
+                              user.bio!,
+                              textAlign: TextAlign.center,
+                              style: const TextStyle(
+                                fontSize: 14,
+                                color: _ProfileColors.greyText,
+                                height: 1.4,
+                              ),
+                            ),
+                          ],
+                          const SizedBox(height: 20),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              _StatItem(
+                                value: reviewCount.toString(),
+                                label: 'Yorum',
+                                color: _ProfileColors.purpleAccent,
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 20),
+                          SizedBox(
+                            width: double.infinity,
+                            child: OutlinedButton.icon(
+                              onPressed: user == null
+                                  ? null
+                                  : () => _openEditProfile(user),
+                              icon: const Icon(Icons.edit_outlined, size: 16),
+                              label: const Text('Profili Düzenle'),
+                              style: OutlinedButton.styleFrom(
+                                foregroundColor: _ProfileColors.mintAccent,
+                                side: BorderSide(
+                                  color: _ProfileColors.mintAccent
+                                      .withValues(alpha: 0.5),
+                                ),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(14),
+                                ),
+                                padding:
+                                    const EdgeInsets.symmetric(vertical: 12),
+                                textStyle: const TextStyle(
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.w500,
                                 ),
                               ),
-                            )
-                          : const Icon(
-                              Icons.person_outline_rounded,
-                              size: 44,
-                              color: Colors.white,
                             ),
-                    ),
-                    const SizedBox(height: 14),
-                    Text(
-                      user?.username ?? '...',
-                      style: const TextStyle(
-                        fontSize: 22,
-                        fontWeight: FontWeight.w700,
-                        color: _ProfileColors.darkText,
+                          ),
+                          const SizedBox(height: 10),
+                          SizedBox(
+                            width: double.infinity,
+                            child: OutlinedButton.icon(
+                              onPressed: _openReadingStats,
+                              icon: const Icon(Icons.bar_chart_rounded,
+                                  size: 16),
+                              label: const Text('İstatistiklerim'),
+                              style: OutlinedButton.styleFrom(
+                                foregroundColor: _ProfileColors.purpleAccent,
+                                side: BorderSide(
+                                  color: _ProfileColors.purpleAccent
+                                      .withValues(alpha: 0.5),
+                                ),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(14),
+                                ),
+                                padding:
+                                    const EdgeInsets.symmetric(vertical: 12),
+                                textStyle: const TextStyle(
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
                     ),
-                    const SizedBox(height: 4),
-                    Text(
-                      user?.email ?? '',
-                      style: const TextStyle(
-                        fontSize: 14,
-                        color: _ProfileColors.greyText,
-                      ),
-                    ),
-                    if (user?.bio != null && user!.bio!.isNotEmpty) ...[
-                      const SizedBox(height: 12),
-                      Text(
-                        user.bio!,
-                        textAlign: TextAlign.center,
-                        style: const TextStyle(
-                          fontSize: 14,
-                          color: _ProfileColors.greyText,
-                          height: 1.4,
-                        ),
-                      ),
-                    ],
-                    const SizedBox(height: 20),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        _StatItem(
-                          value: reviewCount.toString(),
-                          label: 'Yorum',
-                          color: _ProfileColors.purpleAccent,
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 20),
-                    SizedBox(
-                      width: double.infinity,
-                      child: OutlinedButton.icon(
-                        onPressed: user == null ? null : () => _openEditProfile(user),
-                        icon: const Icon(Icons.edit_outlined, size: 16),
-                        label: const Text('Profili Düzenle'),
-                        style: OutlinedButton.styleFrom(
-                          foregroundColor: _ProfileColors.mintAccent,
-                          side: BorderSide(
-                            color: _ProfileColors.mintAccent.withValues(alpha: 0.5),
-                          ),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(14),
-                          ),
-                          padding: const EdgeInsets.symmetric(vertical: 12),
-                          textStyle: const TextStyle(
-                            fontSize: 15,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 10),
-                    SizedBox(
-                      width: double.infinity,
-                      child: OutlinedButton.icon(
-                        onPressed: _openReadingStats,
-                        icon: const Icon(Icons.bar_chart_rounded, size: 16),
-                        label: const Text('İstatistiklerim'),
-                        style: OutlinedButton.styleFrom(
-                          foregroundColor: _ProfileColors.purpleAccent,
-                          side: BorderSide(
-                            color: _ProfileColors.purpleAccent.withValues(alpha: 0.5),
-                          ),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(14),
-                          ),
-                          padding: const EdgeInsets.symmetric(vertical: 12),
-                          textStyle: const TextStyle(
-                            fontSize: 15,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 24),
-                  ],
-                ),
-              ),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 20),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
+                    const SizedBox(height: 24),
                     const Text(
                       'AI Tercihlerim',
                       style: TextStyle(
@@ -247,41 +247,101 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         color: _ProfileColors.darkText,
                       ),
                     ),
-                    const SizedBox(height: 16),
-                    const Text(
-                      'Sevdiğim Temalar',
+                    const SizedBox(height: 2),
+                    Text(
+                      'Yorumlarından öğrenilen tercihler',
                       style: TextStyle(
-                        fontSize: 14,
-                        color: _ProfileColors.greyText,
-                        fontWeight: FontWeight.w500,
+                        fontSize: 12,
+                        color: _ProfileColors.greyText.withValues(alpha: 0.85),
                       ),
                     ),
-                    const SizedBox(height: 10),
-                    Wrap(
-                      spacing: 8,
-                      runSpacing: 8,
-                      children: likedThemes
-                          .map((t) => _ProfileChip(label: t, selected: true))
-                          .toList(),
-                    ),
-                    const SizedBox(height: 16),
-                    const Text(
-                      'Favori Türlerim',
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: _ProfileColors.greyText,
-                        fontWeight: FontWeight.w500,
+                    const SizedBox(height: 18),
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(18),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(22),
+                        border: Border.all(color: _ProfileColors.chipBorder),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.04),
+                            blurRadius: 14,
+                            offset: const Offset(0, 4),
+                          ),
+                        ],
                       ),
-                    ),
-                    const SizedBox(height: 10),
-                    Wrap(
-                      spacing: 8,
-                      runSpacing: 8,
-                      children: [
-                        ...favoriteGenres
-                            .map((g) => _ProfileChip(label: g, selected: false)),
-                        _ProfileChip(label: '+ Ekle', selected: false, isAdd: true),
-                      ],
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                        Row(
+                            children: [
+                              Text(
+                                'SEVDİĞİM TEMALAR',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w700,
+                                  letterSpacing: 1.1,
+                                  color: _ProfileColors.mintAccent,
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 12),
+                          likedThemes.isEmpty
+                              ? Text(
+                                  'Henüz yeterli yorum analizi yok.',
+                                  style: TextStyle(
+                                    fontSize: 13,
+                                    color: _ProfileColors.greyText
+                                        .withValues(alpha: 0.8),
+                                  ),
+                                )
+                              : Wrap(
+                                  spacing: 8,
+                                  runSpacing: 8,
+                                  children: likedThemes
+                                      .map((t) => _ProfileChip(
+                                          label: t, selected: true))
+                                      .toList(),
+                                ),
+                          const SizedBox(height: 18),
+                          const Divider(
+                              height: 1, color: _ProfileColors.chipBorder),
+                          const SizedBox(height: 18),
+Row(
+                            children: [
+                              Text(
+                                'FAVORİ TÜRLERİM',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w700,
+                                  letterSpacing: 1.1,
+                                  color: _ProfileColors.purpleAccent,
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 12),
+                          favoriteGenres.isEmpty
+                              ? Text(
+                                  'Henüz yeterli yorum analizi yok.',
+                                  style: TextStyle(
+                                    fontSize: 13,
+                                    color: _ProfileColors.greyText
+                                        .withValues(alpha: 0.8),
+                                  ),
+                                )
+                              : Wrap(
+                                  spacing: 8,
+                                  runSpacing: 8,
+                                  children: favoriteGenres
+                                      .map((g) => _ProfileChip(
+                                          label: g, selected: false))
+                                      .toList(),
+                                ),
+                        ],
+                      ),
                     ),
                     const SizedBox(height: 28),
                     SizedBox(
