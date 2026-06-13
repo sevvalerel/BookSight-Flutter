@@ -1,17 +1,13 @@
 import 'dart:convert';
-
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
-
 import '../config/api_config.dart';
 import '../utils/api_error.dart';
 
 class GenreCount {
   final String genre;
   final int count;
-
   GenreCount({required this.genre, required this.count});
-
   factory GenreCount.fromJson(Map<String, dynamic> json) {
     return GenreCount(
       genre: json['genre'] as String? ?? '',
@@ -23,9 +19,7 @@ class GenreCount {
 class MonthlyCount {
   final String month;
   final int count;
-
   MonthlyCount({required this.month, required this.count});
-
   factory MonthlyCount.fromJson(Map<String, dynamic> json) {
     return MonthlyCount(
       month: json['month'] as String? ?? '',
@@ -41,6 +35,7 @@ class ReadingStats {
   final double averageRating;
   final List<GenreCount> genreDistribution;
   final List<MonthlyCount> monthlyTrend;
+  final List<String> topThemes;
 
   ReadingStats({
     required this.totalReviews,
@@ -49,6 +44,7 @@ class ReadingStats {
     required this.averageRating,
     required this.genreDistribution,
     required this.monthlyTrend,
+    required this.topThemes,
   });
 
   factory ReadingStats.fromJson(Map<String, dynamic> json) {
@@ -62,6 +58,9 @@ class ReadingStats {
           .toList(),
       monthlyTrend: (json['monthlyTrend'] as List<dynamic>? ?? [])
           .map((e) => MonthlyCount.fromJson(e as Map<String, dynamic>))
+          .toList(),
+      topThemes: (json['topThemes'] as List<dynamic>? ?? [])
+          .map((e) => e as String)
           .toList(),
     );
   }
@@ -78,18 +77,15 @@ class StatsService {
   Future<ReadingStats> getMyStats() async {
     final token = await _getToken();
     if (token == null) throw Exception('Oturum açılmamış.');
-
     final response = await http.get(
       Uri.parse('$_baseUrl/api/stats/me'),
       headers: {'Authorization': 'Bearer $token'},
     );
-
     if (response.statusCode == 200) {
       return ReadingStats.fromJson(
         jsonDecode(utf8.decode(response.bodyBytes)) as Map<String, dynamic>,
       );
     }
-
     throw Exception(parseApiError(response));
   }
 }

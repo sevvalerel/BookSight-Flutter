@@ -5,6 +5,7 @@ import '../services/user_service.dart';
 import 'edit_profile_screen.dart';
 import 'reading_stats_screen.dart';
 import '../widgets/screen_header.dart';
+import '../services/stats_service.dart';
 
 abstract final class _ProfileColors {
   static const Color background = Color(0xFFF5FAF7);
@@ -35,13 +36,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   void _loadProfile() {
-    setState(() {
-      _profileFuture = Future.wait([
-        UserService().getMyProfile(),
-        ReviewService().getMyReviews(),
-      ]);
-    });
-  }
+      setState(() {
+        _profileFuture = Future.wait([
+          UserService().getMyProfile(),
+          ReviewService().getMyReviews(),
+          StatsService().getMyStats(),
+        ]);
+      });
+    }
 
   Future<void> _openEditProfile(UserProfile user) async {
     final updated = await Navigator.push<bool>(
@@ -78,11 +80,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
         }
 
         final user = snapshot.data?[0] as UserProfile?;
-        final myReviews = snapshot.data?[1] as List<Review>?;
-        final reviewCount = myReviews?.length ?? 0;
-
-        const likedThemes = ['Duygusal', 'Karakter Odaklı', 'Psikolojik', 'Klasik'];
-        const favoriteGenres = ['Roman', 'Distopya', 'Felsefe'];
+                final myReviews = snapshot.data?[1] as List<Review>?;
+                final stats = snapshot.data?[2] as ReadingStats?;
+                final reviewCount = myReviews?.length ?? 0;
+                final likedThemes = stats?.topThemes ?? <String>[];
+                final favoriteGenres = stats?.genreDistribution
+                        .map((g) => g.genre)
+                        .toList() ??
+                    <String>[];
 
         return SingleChildScrollView(
           padding: const EdgeInsets.fromLTRB(0, 16, 0, 120),
