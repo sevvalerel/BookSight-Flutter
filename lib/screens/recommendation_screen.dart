@@ -409,6 +409,61 @@ class _RecommendationBookCard extends StatelessWidget {
           const SizedBox(height: 12),
           Row(
             children: [
+              IconButton(
+                onPressed: () async {
+                  try {
+                    final msg = await RecommendationService().submitFeedback(item.bookId, true);
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text(msg), backgroundColor: _RecommendationColors.mintAccent),
+                      );
+                    }
+                  } catch (e) {
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text('Hata: $e')),
+                      );
+                    }
+                  }
+                },
+                icon: const Icon(Icons.thumb_up_outlined, size: 20),
+                color: _RecommendationColors.mintAccent,
+                tooltip: 'Beğendim',
+              ),
+              IconButton(
+                onPressed: () async {
+                  try {
+                    final msg = await RecommendationService().submitFeedback(item.bookId, false);
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text(msg), backgroundColor: Colors.orange),
+                      );
+                    }
+                  } catch (e) {
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text('Hata: $e')),
+                      );
+                    }
+                  }
+                },
+                icon: const Icon(Icons.thumb_down_outlined, size: 20),
+                color: _RecommendationColors.greyText,
+                tooltip: 'Beğenmedim',
+              ),
+              const Spacer(),
+              Text(
+                'Bu öneriyi değerlendir',
+                style: TextStyle(
+                  fontSize: 11,
+                  color: _RecommendationColors.greyText.withValues(alpha: 0.8),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Row(
+            children: [
               Expanded(
                 child: OutlinedButton(
                   onPressed: () => _showStatusPicker(context, item),

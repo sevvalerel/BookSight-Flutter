@@ -8,6 +8,7 @@ import 'recommendation_screen.dart';
 import 'library_screen.dart';
 import 'profile_screen.dart';
 import 'book_detail_screen.dart';
+import 'package:iconsax_flutter/iconsax_flutter.dart';
 
 abstract final class _HomeColors {
   static const Color background = Color(0xFFF5FAF7);
@@ -403,13 +404,13 @@ Future<void> _loadBooks({bool reset = false}) async {
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceAround,
           children: [
-            _NavItem(icon: Icons.search_rounded, label: 'Ara',
+            _NavItem(icon: Iconsax.search_normal_1, label: 'Ara',
               selected: _navIndex == 0, onTap: () => setState(() => _navIndex = 0)),
-            _NavItem(icon: Icons.auto_awesome_rounded, label: 'AI',
+            _NavItem(icon: Iconsax.magicpen, label: 'AI',
               selected: _navIndex == 1, onTap: () => setState(() => _navIndex = 1)),
-            _NavItem(icon: Icons.menu_book_rounded, label: 'Kütüphane',
+            _NavItem(icon: Iconsax.book_1, label: 'Kütüphane',
               selected: _navIndex == 2, onTap: () => setState(() => _navIndex = 2)),
-            _NavItem(icon: Icons.person_outline_rounded, label: 'Profil',
+            _NavItem(icon: Iconsax.profile_circle, label: 'Profil',
               selected: _navIndex == 3, onTap: () => setState(() => _navIndex = 3)),
           ],
         ),
@@ -584,9 +585,9 @@ class _NavItem extends StatelessWidget {
   final bool selected;
   final VoidCallback onTap;
 
-  @override
+@override
   Widget build(BuildContext context) {
-    final color = selected ? _HomeColors.mintAccent : _HomeColors.greyText;
+    final color = selected ? _HomeColors.purpleAccent : const Color(0xFF9BA8B2);
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(20),
@@ -599,7 +600,7 @@ class _NavItem extends StatelessWidget {
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
                 color: selected
-                  ? _HomeColors.mintAccent.withValues(alpha: 0.22)
+                  ? _HomeColors.purpleAccent.withValues(alpha: 0.15)
                   : Colors.transparent,
                 shape: BoxShape.circle,
               ),

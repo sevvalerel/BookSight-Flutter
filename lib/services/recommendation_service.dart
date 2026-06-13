@@ -106,4 +106,21 @@ class RecommendationService {
 
     throw Exception(parseApiError(response));
   }
+  Future<String> submitFeedback(int bookId, bool liked) async {
+    final token = await _getToken();
+    if (token == null) throw Exception('Oturum açılmamış.');
+    final response = await http.post(
+      Uri.parse('$_baseUrl/api/recommendations/$bookId/feedback'),
+      headers: {
+        'Authorization': 'Bearer $token',
+        'Content-Type': 'application/json',
+      },
+      body: jsonEncode({'liked': liked}),
+    );
+    if (response.statusCode == 200) {
+      final data = jsonDecode(utf8.decode(response.bodyBytes));
+      return data['message'] as String;
+    }
+    throw Exception(parseApiError(response));
+  }
 }
