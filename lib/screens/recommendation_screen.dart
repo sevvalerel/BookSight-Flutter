@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
+import '../navigation/app_page_route.dart';
 import '../services/recommendation_service.dart';
+import '../widgets/book_cover.dart';
 import '../widgets/screen_header.dart';
+import 'book_detail_screen.dart';
+import '../services/reading_status_service.dart';
 
 abstract final class _RecommendationColors {
   static const Color background = Color(0xFFF5FAF7);
@@ -121,7 +125,7 @@ class _RecommendationScreenState extends State<RecommendationScreen> {
 
   Widget _buildInsightCard() {
     final completed = _analyzedReviews;
-    final progress = completed == 0 ? 0.0 : (completed / 10).clamp(0.1, 1.0);
+    final progress = (completed / 10).clamp(0.0, 1.0);
 
     return Container(
       padding: const EdgeInsets.all(12),
@@ -165,7 +169,9 @@ class _RecommendationScreenState extends State<RecommendationScreen> {
                       ),
                     ),
                     Text(
-                      '$completed/10 kitap değerlendirildi',
+                      completed >= 10
+                          ? '$completed kitap değerlendirildi'
+                          : '$completed/10 kitap değerlendirildi',
                       style: const TextStyle(
                         color: Colors.white,
                         fontSize: 12,
@@ -252,6 +258,71 @@ class _RecommendationBookCard extends StatelessWidget {
   const _RecommendationBookCard(this.item);
   final BookRecommendation item;
 
+  void _showStatusPicker(BuildContext context, BookRecommendation item) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (sheetContext) {
+        Widget tile(String label, IconData icon, String status) {
+          return ListTile(
+            leading: Icon(icon, color: const Color(0xFF6B4EFF)),
+            title: Text(label,
+                style: const TextStyle(fontWeight: FontWeight.w600)),
+            onTap: () async {
+              Navigator.pop(sheetContext);
+              try {
+                await ReadingStatusService().addOrUpdate(item.bookId, status);
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('$label olarak eklendi!')),
+                  );
+                }
+              } catch (e) {
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('Hata: $e')),
+                  );
+                }
+              }
+            },
+          );
+        }
+
+        return SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const SizedBox(height: 12),
+              Container(
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade300,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              const SizedBox(height: 8),
+              const Padding(
+                padding: EdgeInsets.symmetric(vertical: 8),
+                child: Text('Kütüphaneye Ekle',
+                    style: TextStyle(
+                        fontSize: 16, fontWeight: FontWeight.w700)),
+              ),
+              const Divider(height: 1),
+              tile('Okuyorum', Icons.auto_stories, 'READING'),
+              tile('Okuyacağım', Icons.bookmark_outline, 'WILL_READ'),
+              tile('Okudum', Icons.check_circle_outline, 'READ'),
+              const SizedBox(height: 8),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -273,25 +344,12 @@ class _RecommendationBookCard extends StatelessWidget {
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              ClipRRect(
-                borderRadius: BorderRadius.circular(14),
-                child: item.coverUrl != null
-                    ? Image.network(
-                        item.coverUrl!,
-                        width: 66,
-                        height: 92,
-                        fit: BoxFit.cover,
-                        errorBuilder: (_, __, ___) => Container(
-                          width: 66,
-                          height: 92,
-                          color: _RecommendationColors.placeholderCover,
-                        ),
-                      )
-                    : Container(
-                        width: 66,
-                        height: 92,
-                        color: _RecommendationColors.placeholderCover,
-                      ),
+              BookCover(
+                coverUrl: item.coverUrl,
+                width: 66,
+                height: 92,
+                borderRadius: 14,
+                heroTag: BookCover.heroTagFor(item.bookId),
               ),
               const SizedBox(width: 12),
               Expanded(
@@ -361,7 +419,7 @@ class _RecommendationBookCard extends StatelessWidget {
             children: [
               Expanded(
                 child: OutlinedButton(
-                  onPressed: () {},
+                  onPressed: () => _showStatusPicker(context, item),
                   style: OutlinedButton.styleFrom(
                     side: const BorderSide(color: Color(0xFFD4EDE1)),
                     shape: RoundedRectangleBorder(
@@ -379,10 +437,13 @@ class _RecommendationBookCard extends StatelessWidget {
               Expanded(
                 child: FilledButton(
                   onPressed: () {
-                    Navigator.pushNamed(
+                    final book = item.toBook();
+                    Navigator.push(
                       context,
-                      '/book-detail',
-                      arguments: item.toBook(),
+                      AppPageRoute(
+                        settings: RouteSettings(name: '/book-detail', arguments: book),
+                        page: BookDetailScreen(book: book),
+                      ),
                     );
                   },
                   style: FilledButton.styleFrom(

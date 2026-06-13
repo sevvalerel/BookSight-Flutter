@@ -14,6 +14,7 @@ class BookCover extends StatelessWidget {
     this.height,
     this.borderRadius = 12,
     this.fit = BoxFit.cover,
+    this.heroTag,
   });
 
   final String? coverUrl;
@@ -21,6 +22,9 @@ class BookCover extends StatelessWidget {
   final double? height;
   final double borderRadius;
   final BoxFit fit;
+  final Object? heroTag;
+
+  static String heroTagFor(int bookId) => 'book_$bookId';
 
   String? get _normalizedUrl {
     final url = coverUrl?.trim();
@@ -31,13 +35,20 @@ class BookCover extends StatelessWidget {
     return url;
   }
 
+  Widget _sizeWrap(Widget child) {
+    if (width != null || height != null) {
+      return SizedBox(width: width, height: height, child: child);
+    }
+    return SizedBox.expand(child: child);
+  }
+
   Widget _placeholder() {
-    return Container(
-      width: width,
-      height: height,
-      color: _BookCoverColors.placeholder,
-      child: const Center(
-        child: Icon(Icons.menu_book_rounded, color: _BookCoverColors.icon, size: 32),
+    return _sizeWrap(
+      Container(
+        color: _BookCoverColors.placeholder,
+        child: const Center(
+          child: Icon(Icons.menu_book_rounded, color: _BookCoverColors.icon, size: 32),
+        ),
       ),
     );
   }
@@ -46,29 +57,37 @@ class BookCover extends StatelessWidget {
   Widget build(BuildContext context) {
     final url = _normalizedUrl;
 
-    return ClipRRect(
+    final cover = ClipRRect(
       borderRadius: BorderRadius.circular(borderRadius),
       child: url == null
           ? _placeholder()
-          : CachedNetworkImage(
-              imageUrl: url,
-              width: width,
-              height: height,
-              fit: fit,
-              placeholder: (_, __) => Container(
-                width: width,
-                height: height,
-                color: _BookCoverColors.placeholder,
-                child: const Center(
-                  child: SizedBox(
-                    width: 24,
-                    height: 24,
-                    child: CircularProgressIndicator(strokeWidth: 2),
+          : _sizeWrap(
+              CachedNetworkImage(
+                imageUrl: url,
+                fit: fit,
+                placeholder: (_, __) => Container(
+                  color: _BookCoverColors.placeholder,
+                  child: const Center(
+                    child: SizedBox(
+                      width: 24,
+                      height: 24,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    ),
                   ),
                 ),
+                errorWidget: (_, __, ___) => _placeholder(),
               ),
-              errorWidget: (_, __, ___) => _placeholder(),
             ),
+    );
+
+    if (heroTag == null) return cover;
+
+    return Hero(
+      tag: heroTag!,
+      child: Material(
+        color: Colors.transparent,
+        child: cover,
+      ),
     );
   }
 }

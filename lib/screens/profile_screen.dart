@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import '../navigation/app_page_route.dart';
 import '../services/review_service.dart';
 import '../services/user_service.dart';
 import 'edit_profile_screen.dart';
+import 'reading_stats_screen.dart';
 import '../widgets/screen_header.dart';
 
 abstract final class _ProfileColors {
@@ -44,11 +46,18 @@ class _ProfileScreenState extends State<ProfileScreen> {
   Future<void> _openEditProfile(UserProfile user) async {
     final updated = await Navigator.push<bool>(
       context,
-      MaterialPageRoute(
-        builder: (_) => EditProfileScreen(profile: user),
+      AppPageRoute(
+        page: EditProfileScreen(profile: user),
       ),
     );
     if (updated == true) _loadProfile();
+  }
+
+  void _openReadingStats() {
+    Navigator.push(
+      context,
+      AppPageRoute(page: const ReadingStatsScreen()),
+    );
   }
 
   @override
@@ -178,6 +187,29 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           foregroundColor: _ProfileColors.mintAccent,
                           side: BorderSide(
                             color: _ProfileColors.mintAccent.withValues(alpha: 0.5),
+                          ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(14),
+                          ),
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                          textStyle: const TextStyle(
+                            fontSize: 15,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    SizedBox(
+                      width: double.infinity,
+                      child: OutlinedButton.icon(
+                        onPressed: _openReadingStats,
+                        icon: const Icon(Icons.bar_chart_rounded, size: 16),
+                        label: const Text('İstatistiklerim'),
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: _ProfileColors.purpleAccent,
+                          side: BorderSide(
+                            color: _ProfileColors.purpleAccent.withValues(alpha: 0.5),
                           ),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(14),

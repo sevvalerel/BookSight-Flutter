@@ -1,9 +1,13 @@
 import 'package:flutter/material.dart';
+import '../navigation/app_page_route.dart';
 import '../services/auth_service.dart';
 import '../services/book_service.dart';
+import '../widgets/book_cover.dart';
+import '../widgets/staggered_entrance.dart';
 import 'recommendation_screen.dart';
 import 'library_screen.dart';
 import 'profile_screen.dart';
+import 'book_detail_screen.dart';
 
 abstract final class _HomeColors {
   static const Color background = Color(0xFFF5FAF7);
@@ -30,6 +34,7 @@ class _HomeScreenState extends State<HomeScreen> {
   final _bookService = BookService();
 
   List<Book> _books = [];
+  List<Book> _discoverBooks = [];
   List<Book> _searchResults = [];
   bool _isLoading = true;
   bool _isSearching = false;
@@ -38,9 +43,10 @@ class _HomeScreenState extends State<HomeScreen> {
   int _currentPage = 0;
   String? _selectedGenre;
   int _searchRequestId = 0;
+  bool _runInitialListAnimation = true;
 
   static const List<String> _trendTags = [
-    'Roman', 'Klasik', 'Distopya', 'Bilim',
+    'Roman', 'Klasik', 'Bilim','Türk Romanı'
   ];
 
   @override
@@ -81,9 +87,11 @@ Future<void> _loadBooks({bool reset = false}) async {
       );
       setState(() {
         _books.addAll(result['books'] as List<Book>);
+        _discoverBooks = List.of(_books)..shuffle();
         _hasNextPage = result['hasNext'] as bool;
         _isLoading = false;
       });
+      _scheduleInitialListAnimationEnd();
     } catch (e) {
       print('HATA: $e'); // ← bunu ekle
       setState(() => _isLoading = false);
@@ -145,6 +153,25 @@ Future<void> _loadBooks({bool reset = false}) async {
       if (!mounted || currentRequestId != _searchRequestId) return;
       setState(() => _isSearching = false);
     }
+  }
+
+  void _scheduleInitialListAnimationEnd() {
+    if (!_runInitialListAnimation) return;
+    final itemCount = _books.length > 10 ? 10 : _books.length;
+    final totalMs = (itemCount * 50) + 420;
+    Future<void>.delayed(Duration(milliseconds: totalMs), () {
+      if (mounted) setState(() => _runInitialListAnimation = false);
+    });
+  }
+
+  void _openBookDetail(Book book) {
+    Navigator.push(
+      context,
+      AppPageRoute(
+        settings: RouteSettings(name: '/book-detail', arguments: book),
+        page: BookDetailScreen(book: book),
+      ),
+    );
   }
 
   Future<void> _logout() async {
@@ -218,7 +245,7 @@ Future<void> _loadBooks({bool reset = false}) async {
               padding: const EdgeInsets.fromLTRB(20, 28, 12, 0),
               child: Row(
                 children: [
-                  Expanded(child: Text('Senin için popüler',
+                  Expanded(child: Text('Keşfet',
                     style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: _HomeColors.darkText))),
                   TextButton(
                     onPressed: () {},
@@ -237,14 +264,21 @@ Future<void> _loadBooks({bool reset = false}) async {
               height: 268,
               child: _isLoading
                 ? const Center(child: CircularProgressIndicator())
-                : _books.isEmpty
+                : _discoverBooks.isEmpty
                   ? const Center(child: Text('Kitap bulunamadı'))
                   : ListView.separated(
                       padding: const EdgeInsets.fromLTRB(20, 12, 20, 0),
                       scrollDirection: Axis.horizontal,
-                      itemCount: _books.length > 10 ? 10 : _books.length,
+                      itemCount: _discoverBooks.length > 10 ? 10 : _discoverBooks.length,
                       separatorBuilder: (_, __) => const SizedBox(width: 14),
-                      itemBuilder: (context, i) => _PopularBookCard(book: _books[i]),
+                      itemBuilder: (context, i) => StaggeredEntrance(
+                        index: i,
+                        enabled: _runInitialListAnimation,
+                        child: _PopularBookCard(
+                          book: _discoverBooks[i],
+                          onTap: () => _openBookDetail(_discoverBooks[i]),
+                        ),
+                      ),
                     ),
             ),
           ),
@@ -285,7 +319,14 @@ Future<void> _loadBooks({bool reset = false}) async {
                           if (index >= listToShow.length) return null;
                           return Padding(
                             padding: const EdgeInsets.only(bottom: 12),
-                            child: _SearchResultRow(book: listToShow[index]),
+                            child: StaggeredEntrance(
+                              index: index,
+                              enabled: !hasQuery && _runInitialListAnimation,
+                              child: _SearchResultRow(
+                                book: listToShow[index],
+                                onTap: () => _openBookDetail(listToShow[index]),
+                              ),
+                            ),
                           );
                         },
                         childCount: listToShow.length,
@@ -411,13 +452,14 @@ class _TrendChip extends StatelessWidget {
 }
 
 class _PopularBookCard extends StatelessWidget {
-  const _PopularBookCard({required this.book});
+  const _PopularBookCard({required this.book, required this.onTap});
   final Book book;
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTap: () => Navigator.pushNamed(context, '/book-detail', arguments: book),
+      onTap: onTap,
       child: SizedBox(
         width: 158,
         child: Container(
@@ -436,35 +478,11 @@ class _PopularBookCard extends StatelessWidget {
               Expanded(
                 child: Stack(
                   children: [
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(16),
-                      child: book.coverUrl != null
-                        ? Image.network(book.coverUrl!,
-                            width: double.infinity, fit: BoxFit.cover,
-                            errorBuilder: (_, __, ___) =>
-                              Container(color: _HomeColors.placeholderCover))
-                        : Container(width: double.infinity,
-                            color: _HomeColors.placeholderCover),
-                    ),
-                    Positioned(
-                      top: 6, right: 6,
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                        decoration: BoxDecoration(
-                          color: _HomeColors.purpleAccent,
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        child: const Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(Icons.auto_awesome_rounded,
-                              color: Colors.white, size: 12),
-                            SizedBox(width: 4),
-                            Text('AI önerisi', style: TextStyle(
-                              color: Colors.white, fontSize: 10,
-                              fontWeight: FontWeight.w600)),
-                          ],
-                        ),
+                    Positioned.fill(
+                      child: BookCover(
+                        coverUrl: book.coverUrl,
+                        borderRadius: 16,
+                        heroTag: BookCover.heroTagFor(book.bookId),
                       ),
                     ),
                   ],
@@ -506,13 +524,14 @@ class _PopularBookCard extends StatelessWidget {
 }
 
 class _SearchResultRow extends StatelessWidget {
-  const _SearchResultRow({required this.book});
+  const _SearchResultRow({required this.book, required this.onTap});
   final Book book;
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTap: () => Navigator.pushNamed(context, '/book-detail', arguments: book),
+      onTap: onTap,
       child: Container(
         decoration: BoxDecoration(
           color: Colors.white,
@@ -525,16 +544,11 @@ class _SearchResultRow extends StatelessWidget {
         padding: const EdgeInsets.all(12),
         child: Row(
           children: [
-            ClipRRect(
-              borderRadius: BorderRadius.circular(12),
-              child: book.coverUrl != null
-                ? Image.network(book.coverUrl!,
-                    width: 56, height: 72, fit: BoxFit.cover,
-                    errorBuilder: (_, __, ___) =>
-                      Container(width: 56, height: 72,
-                        color: _HomeColors.placeholderCover))
-                : Container(width: 56, height: 72,
-                    color: _HomeColors.placeholderCover),
+            BookCover(
+              coverUrl: book.coverUrl,
+              width: 56,
+              height: 72,
+              heroTag: BookCover.heroTagFor(book.bookId),
             ),
             const SizedBox(width: 14),
             Expanded(

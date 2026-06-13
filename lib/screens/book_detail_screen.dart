@@ -4,7 +4,6 @@ import '../services/review_service.dart';
 import '../services/auth_service.dart';
 import '../widgets/book_cover.dart';
 import '../services/reading_status_service.dart';
-import '../widgets/screen_header.dart';
 
 abstract final class _DetailColors {
   static const Color background = Color(0xFFF5FAF7);
@@ -195,11 +194,13 @@ class _BookDetailScreenState extends State<BookDetailScreen> {
   Future<void> _loadReviews() async {
     try {
       final reviews = await _reviewService.getReviews(widget.book.bookId);
+      if (!mounted) return;
       setState(() {
         _reviews = reviews;
         _isLoadingReviews = false;
       });
     } catch (e) {
+      if (!mounted) return;
       setState(() => _isLoadingReviews = false);
     }
   }
@@ -267,126 +268,21 @@ class _BookDetailScreenState extends State<BookDetailScreen> {
     final reviewId = review.reviewId;
     if (reviewId == null) return;
 
-    final reviewController = TextEditingController(text: review.reviewText ?? '');
-    int selectedRating = review.rating ?? 5;
-    bool isSaving = false;
-
-    await showDialog(
+    final saved = await showDialog<bool>(
       context: context,
-      builder: (dialogContext) {
-        return StatefulBuilder(
-          builder: (dialogInnerContext, setDialogState) {
-            return AlertDialog(
-              title: const Text('Yorumu Düzenle'),
-              content: SingleChildScrollView(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: List.generate(
-                        5,
-                        (i) => GestureDetector(
-                          onTap: () => setDialogState(() => selectedRating = i + 1),
-                          child: Icon(
-                            i < selectedRating
-                                ? Icons.star_rounded
-                                : Icons.star_border_rounded,
-                            color: _DetailColors.star,
-                            size: 30,
-                          ),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    TextField(
-                      controller: reviewController,
-                      maxLines: 4,
-                      decoration: InputDecoration(
-                        hintText: 'Yorumunuzu güncelleyin... (en az 50 karakter)',
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              actions: [
-                TextButton(
-                  onPressed: isSaving ? null : () => Navigator.pop(dialogContext),
-                  child: const Text('İptal'),
-                ),
-                ElevatedButton(
-                  onPressed: isSaving
-                      ? null
-                      : () async {
-                          final text = reviewController.text.trim();
-                          if (text.length < 50) {
-                            ScaffoldMessenger.of(this.context).showSnackBar(
-                              const SnackBar(
-                                content: Text('Yorum en az 50 karakter olmalıdır.'),
-                              ),
-                            );
-                            return;
-                          }
-
-                          setDialogState(() => isSaving = true);
-                          try {
-                            await _reviewService.updateReview(
-                              reviewId: reviewId,
-                              reviewText: text,
-                              rating: selectedRating,
-                            );
-
-                            if (!mounted) return;
-                            await _loadReviews();
-                            if (dialogContext.mounted) {
-                              Navigator.pop(dialogContext);
-                            }
-                            if (mounted) {
-                              ScaffoldMessenger.of(this.context).showSnackBar(
-                                const SnackBar(content: Text('Yorum güncellendi.')),
-                              );
-                            }
-                          } catch (e) {
-                            if (dialogInnerContext.mounted) {
-                              setDialogState(() => isSaving = false);
-                            }
-                            if (mounted) {
-                              ScaffoldMessenger.of(this.context).showSnackBar(
-                                SnackBar(
-                                  content: Text(
-                                    e.toString().replaceAll('Exception: ', ''),
-                                  ),
-                                ),
-                              );
-                            }
-                          }
-                        },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: _DetailColors.mintAccent,
-                    foregroundColor: Colors.white,
-                  ),
-                  child: isSaving
-                      ? const SizedBox(
-                          width: 16,
-                          height: 16,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            color: Colors.white,
-                          ),
-                        )
-                      : const Text('Kaydet'),
-                ),
-              ],
-            );
-          },
-        );
-      },
+      builder: (dialogContext) => _EditReviewDialog(
+        review: review,
+        reviewService: _reviewService,
+      ),
     );
 
-    reviewController.dispose();
+    if (saved != true || !mounted) return;
+    await _loadReviews();
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Yorum güncellendi.')),
+      );
+    }
   }
 
   @override
@@ -394,30 +290,18 @@ class _BookDetailScreenState extends State<BookDetailScreen> {
     final book = widget.book;
     return Scaffold(
       backgroundColor: _DetailColors.background,
-      body: Column(
-        children: [
-          SafeArea(
-            bottom: false,
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                IconButton(
-                  icon: const Icon(Icons.arrow_back_ios_rounded,
-                      color: _DetailColors.darkText),
-                  onPressed: () => Navigator.pop(context),
-                ),
-                Expanded(
-                  child: ScreenHeader(
-                    title: book.title,
-                    padding: const EdgeInsets.fromLTRB(0, 12, 20, 12),
-                    maxLines: 2,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          Expanded(
-            child: SingleChildScrollView(
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        scrolledUnderElevation: 0,
+        surfaceTintColor: Colors.transparent,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_ios_rounded,
+              color: _DetailColors.darkText),
+          onPressed: () => Navigator.pop(context),
+        ),
+      ),
+      body: SingleChildScrollView(
         padding: const EdgeInsets.all(20),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -425,7 +309,12 @@ class _BookDetailScreenState extends State<BookDetailScreen> {
             Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                BookCover(coverUrl: book.coverUrl, width: 100, height: 140),
+                BookCover(
+                  coverUrl: book.coverUrl,
+                  width: 100,
+                  height: 140,
+                  heroTag: BookCover.heroTagFor(book.bookId),
+                ),
                 const SizedBox(width: 16),
                 Expanded(
                   child: Column(
@@ -595,9 +484,136 @@ class _BookDetailScreenState extends State<BookDetailScreen> {
           ],
         ),
       ),
-          ),
-        ],
+    );
+  }
+}
+
+class _EditReviewDialog extends StatefulWidget {
+  const _EditReviewDialog({
+    required this.review,
+    required this.reviewService,
+  });
+
+  final Review review;
+  final ReviewService reviewService;
+
+  @override
+  State<_EditReviewDialog> createState() => _EditReviewDialogState();
+}
+
+class _EditReviewDialogState extends State<_EditReviewDialog> {
+  late final TextEditingController _reviewController;
+  late int _selectedRating;
+  bool _isSaving = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _reviewController = TextEditingController(text: widget.review.reviewText ?? '');
+    _selectedRating = widget.review.rating ?? 5;
+  }
+
+  @override
+  void dispose() {
+    _reviewController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _save() async {
+    final reviewId = widget.review.reviewId;
+    if (reviewId == null) return;
+
+    final text = _reviewController.text.trim();
+    if (text.length < 50) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Yorum en az 50 karakter olmalıdır.')),
+      );
+      return;
+    }
+
+    setState(() => _isSaving = true);
+    try {
+      await widget.reviewService.updateReview(
+        reviewId: reviewId,
+        reviewText: text,
+        rating: _selectedRating,
+      );
+      if (!mounted) return;
+      FocusManager.instance.primaryFocus?.unfocus();
+      Navigator.pop(context, true);
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _isSaving = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(e.toString().replaceAll('Exception: ', ''))),
+      );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: const Text('Yorumu Düzenle'),
+      content: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: List.generate(
+                5,
+                (i) => GestureDetector(
+                  onTap: _isSaving
+                      ? null
+                      : () => setState(() => _selectedRating = i + 1),
+                  child: Icon(
+                    i < _selectedRating
+                        ? Icons.star_rounded
+                        : Icons.star_border_rounded,
+                    color: _DetailColors.star,
+                    size: 30,
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: _reviewController,
+              enabled: !_isSaving,
+              maxLines: 4,
+              decoration: InputDecoration(
+                hintText: 'Yorumunuzu güncelleyin... (en az 50 karakter)',
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
+      actions: [
+        TextButton(
+          onPressed: _isSaving ? null : () => Navigator.pop(context),
+          child: const Text('İptal'),
+        ),
+        ElevatedButton(
+          onPressed: _isSaving ? null : _save,
+          style: ElevatedButton.styleFrom(
+            backgroundColor: _DetailColors.mintAccent,
+            foregroundColor: Colors.white,
+          ),
+          child: _isSaving
+              ? const SizedBox(
+                  width: 16,
+                  height: 16,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    color: Colors.white,
+                  ),
+                )
+              : const Text('Kaydet'),
+        ),
+      ],
     );
   }
 }

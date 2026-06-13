@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import 'navigation/app_page_route.dart';
 import 'screens/home_screen.dart';
 import 'screens/login_screen.dart';
 import 'screens/register_screen.dart';
@@ -31,11 +32,24 @@ class BookSightApp extends StatelessWidget {
       routes: {
         '/splash': (context) => const SplashScreen(),
         '/login': (context) => const LoginScreen(),
-        '/register': (context) => const RegisterScreen(),
         '/home': (context) => const HomeScreen(),
-        '/book-detail': (context) => BookDetailScreen(
-          book: ModalRoute.of(context)!.settings.arguments as Book,
-),
+      },
+      onGenerateRoute: (settings) {
+        switch (settings.name) {
+          case '/register':
+            return AppPageRoute(
+              settings: settings,
+              page: const RegisterScreen(),
+            );
+          case '/book-detail':
+            final book = settings.arguments as Book;
+            return AppPageRoute(
+              settings: settings,
+              page: BookDetailScreen(book: book),
+            );
+          default:
+            return null;
+        }
       },
     );
   }

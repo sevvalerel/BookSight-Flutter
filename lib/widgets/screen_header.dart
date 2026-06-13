@@ -16,36 +16,34 @@ class ScreenHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isMultiLine = maxLines > 1;
+
     return Padding(
       padding: padding,
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          Flexible(
-            child: Text(
-              title.toUpperCase(),
-              maxLines: maxLines,
-              overflow: TextOverflow.ellipsis,
-              style: TextStyle(
-                fontSize: fontSize,
-                fontWeight: FontWeight.w700,
-                fontStyle: FontStyle.italic,
-                color: Color(0xFF2D4150),
-                letterSpacing: 1.5,
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          return FittedBox(
+            fit: BoxFit.scaleDown,
+            alignment: Alignment.centerLeft,
+            child: ConstrainedBox(
+              constraints: BoxConstraints(maxWidth: constraints.maxWidth),
+              child: Text(
+                title.toUpperCase(),
+                maxLines: maxLines,
+                overflow: TextOverflow.ellipsis,
+                softWrap: true,
+                style: TextStyle(
+                  fontSize: fontSize,
+                  fontWeight: FontWeight.w700,
+                  fontStyle: FontStyle.italic,
+                  color: const Color(0xFF2D4150),
+                  letterSpacing: 1.5,
+                  height: isMultiLine ? 1.25 : null,
+                ),
               ),
             ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Container(
-              height: 2,
-              decoration: BoxDecoration(
-                color: const Color(0xFF6B4EFF),
-                borderRadius: BorderRadius.circular(1),
-              ),
-            ),
-          ),
-        ],
+          );
+        },
       ),
     );
   }
