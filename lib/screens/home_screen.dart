@@ -43,6 +43,7 @@ class _HomeScreenState extends State<HomeScreen> {
   bool _hasNextPage = true;
   int _currentPage = 0;
   String? _selectedGenre;
+  double? _minRating;
   int _searchRequestId = 0;
   bool _runInitialListAnimation = true;
 
@@ -54,6 +55,7 @@ class _HomeScreenState extends State<HomeScreen> {
   void initState() {
     super.initState();
     _loadBooks();
+    _loadDiscoverBooks();
     _searchController.addListener(_onSearchChanged);
     _scrollController.addListener(_onScroll);
   }
@@ -84,11 +86,11 @@ Future<void> _loadBooks({bool reset = false}) async {
     try {
       final result = await _bookService.getBooks(
         genre: _selectedGenre,
+        minRating: _minRating,
         page: _currentPage,
       );
       setState(() {
         _books.addAll(result['books'] as List<Book>);
-        _discoverBooks = List.of(_books)..shuffle();
         _hasNextPage = result['hasNext'] as bool;
         _isLoading = false;
       });
@@ -102,6 +104,7 @@ Future<void> _loadBooks({bool reset = false}) async {
         );
       }
     }
+    
   }
 
   Future<void> _loadMoreBooks() async {
@@ -127,6 +130,82 @@ Future<void> _loadBooks({bool reset = false}) async {
   Future<void> _loadBooksByGenre(String? genre) async {
     _selectedGenre = genre;
     await _loadBooks(reset: true);
+  }void _showRatingFilter() {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (sheetContext) {
+        Widget tile(String label, double? rating) {
+          final isSelected = _minRating == rating;
+          return ListTile(
+            leading: Icon(
+              rating == null ? Icons.all_inclusive_rounded : Icons.star_rounded,
+              color: isSelected ? _HomeColors.purpleAccent : _HomeColors.greyText,
+            ),
+            title: Text(label,
+                style: TextStyle(
+                  fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                  color: isSelected ? _HomeColors.purpleAccent : _HomeColors.darkText,
+                )),
+            trailing: isSelected
+                ? Icon(Icons.check_rounded, color: _HomeColors.purpleAccent)
+                : null,
+            onTap: () {
+              Navigator.pop(sheetContext);
+              setState(() => _minRating = rating);
+              _loadBooks(reset: true);
+            },
+          );
+        }
+
+        return SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const SizedBox(height: 12),
+              Container(
+                width: 40, height: 4,
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade300,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              const SizedBox(height: 8),
+              const Padding(
+                padding: EdgeInsets.symmetric(vertical: 8),
+                child: Text('Puana Göre Filtrele',
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
+              ),
+              const Divider(height: 1),
+              tile('Tümü', null),
+              tile('3+ Yıldız', 3.0),
+              tile('4+ Yıldız', 4.0),
+              tile('5 Yıldız', 5.0),
+              const SizedBox(height: 8),
+            ],
+          ),
+        );
+      },
+    );
+  }
+  
+  Future<void> _loadDiscoverBooks() async {
+    try {
+      final result = await _bookService.getBooks(page: 0, size: 200);
+      final all = result['books'] as List<Book>;
+      final rated = all.where((b) => (b.reviewCount ?? 0) > 0).toList()
+        ..sort((a, b) => (b.avgRating ?? 0).compareTo(a.avgRating ?? 0));
+      if (mounted) {
+        setState(() {
+          _discoverBooks = rated.isNotEmpty
+              ? rated.take(10).toList()
+              : (List.of(_books)..shuffle());
+        });
+      }
+    } catch (_) {}
   }
 
   void _onSearchChanged() async {
@@ -243,21 +322,9 @@ Future<void> _loadBooks({bool reset = false}) async {
           ),
           SliverToBoxAdapter(
             child: Padding(
-              padding: const EdgeInsets.fromLTRB(20, 28, 12, 0),
-              child: Row(
-                children: [
-                  Expanded(child: Text('Keşfet',
-                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: _HomeColors.darkText))),
-                  TextButton(
-                    onPressed: () {},
-                    style: TextButton.styleFrom(
-                      foregroundColor: _HomeColors.mintAccent,
-                      padding: const EdgeInsets.symmetric(horizontal: 8),
-                    ),
-                    child: const Text('Tümünü gör >'),
-                  ),
-                ],
-              ),
+              padding: const EdgeInsets.fromLTRB(20, 28, 20, 0),
+              child: Text('Keşfet',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: _HomeColors.darkText)),
             ),
           ),
           SliverToBoxAdapter(
@@ -376,7 +443,7 @@ Future<void> _loadBooks({bool reset = false}) async {
           shape: const CircleBorder(),
           clipBehavior: Clip.antiAlias,
           child: InkWell(
-            onTap: () {},
+            onTap: () => _showRatingFilter(),
             child: const SizedBox(
               width: 52, height: 52,
               child: Icon(Icons.tune_rounded, color: Colors.white, size: 24),
@@ -404,7 +471,7 @@ Future<void> _loadBooks({bool reset = false}) async {
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceAround,
           children: [
-            _NavItem(icon: Iconsax.search_normal_1, label: 'Ara',
+            _NavItem(icon: Icons.travel_explore_rounded, label: 'Ara',
               selected: _navIndex == 0, onTap: () => setState(() => _navIndex = 0)),
             _NavItem(icon: Iconsax.magicpen, label: 'AI',
               selected: _navIndex == 1, onTap: () => setState(() => _navIndex = 1)),

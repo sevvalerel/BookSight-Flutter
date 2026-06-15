@@ -123,4 +123,20 @@ class RecommendationService {
     }
     throw Exception(parseApiError(response));
   }
+  Future<List<BookRecommendation>> getHistory() async {
+    final token = await _getToken();
+    if (token == null) throw Exception('Oturum açılmamış.');
+    final response = await http.get(
+      Uri.parse('$_baseUrl/api/recommendations/history'),
+      headers: {
+        'Authorization': 'Bearer $token',
+        'Content-Type': 'application/json',
+      },
+    );
+    if (response.statusCode == 200) {
+      final List data = jsonDecode(utf8.decode(response.bodyBytes));
+      return data.map((e) => BookRecommendation.fromJson(e)).toList();
+    }
+    throw Exception(parseApiError(response));
+  }
 }

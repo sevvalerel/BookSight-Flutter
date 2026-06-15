@@ -228,33 +228,18 @@ class _LibraryScreenState extends State<LibraryScreen>
 
   Widget _buildHeader() {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 52, 20, 16),
+      padding: const EdgeInsets.fromLTRB(20, 12, 20, 16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              Text(
-                'Kütüphanem',
-                style: const TextStyle(
-                  fontSize: 26,
-                  fontWeight: FontWeight.w800,
-                  color: Color(0xFF2D4150),
-                  letterSpacing: -0.5,
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Container(
-                  height: 2,
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF6B4EFF),
-                    borderRadius: BorderRadius.circular(1),
-                  ),
-                ),
-              ),
-            ],
+          Text(
+            'Kütüphanem',
+            style: const TextStyle(
+              fontSize: 26,
+              fontWeight: FontWeight.w800,
+              color: Color(0xFF2D4150),
+              letterSpacing: -0.5,
+            ),
           ),
           const SizedBox(height: 6),
           Text(
@@ -368,6 +353,7 @@ Widget _buildStatRow() {
     return Scaffold(
       backgroundColor: const Color(0xFFF5FAF7),
       body: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           _buildHeader(),
           _buildStatRow(),

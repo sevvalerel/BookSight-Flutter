@@ -53,6 +53,7 @@ class BookService {
   Future<Map<String, dynamic>> getBooks({
     String? search,
     String? genre,
+    double? minRating,
     int page = 0,
     int size = 20,
   }) async {
@@ -63,6 +64,7 @@ class BookService {
     };
     if (search != null && search.isNotEmpty) queryParams['search'] = search;
     if (genre != null && genre.isNotEmpty) queryParams['genre'] = genre;
+    if (minRating != null) queryParams['minRating'] = minRating.toString();
 
     final uri = Uri.parse('$_baseUrl/api/books')
         .replace(queryParameters: queryParams);

@@ -185,20 +185,9 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                       ),
                     ),
                     child: ClipOval(
-                      child: Image.network(
-                        url,
+                      child: Image.asset(      // <-- Image.network yerine bu geldi
+                        url,             // <-- Burası da assetPath oldu
                         fit: BoxFit.cover,
-                        loadingBuilder: (context, child, progress) =>
-                            progress == null
-                                ? child
-                                : const Center(
-                                    child: SizedBox(
-                                      width: 18,
-                                      height: 18,
-                                      child: CircularProgressIndicator(
-                                          strokeWidth: 2),
-                                    ),
-                                  ),
                         errorBuilder: (_, __, ___) => const Icon(
                           Icons.person_outline_rounded,
                           color: _EditProfileColors.greyText,
@@ -312,12 +301,12 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   }
 }
 const List<String> _avatarPresets = [
-  'https://api.dicebear.com/7.x/avataaars/png?seed=Felix',
-  'https://api.dicebear.com/7.x/avataaars/png?seed=Aneka',
-  'https://api.dicebear.com/7.x/avataaars/png?seed=Milo',
-  'https://api.dicebear.com/7.x/avataaars/png?seed=Zoe',
-  'https://api.dicebear.com/7.x/avataaars/png?seed=Leo',
-  'https://api.dicebear.com/7.x/avataaars/png?seed=Nina',
-  'https://api.dicebear.com/7.x/avataaars/png?seed=Max',
-  'https://api.dicebear.com/7.x/avataaars/png?seed=Luna',
+  'assets/images/avatars/03.png',
+  'assets/images/avatars/04.png',
+  'assets/images/avatars/05.png',
+  'assets/images/avatars/06.png',
+  'assets/images/avatars/07.png',
+  'assets/images/avatars/08.png',
+  'assets/images/avatars/19.png',
+  'assets/images/avatars/21.png',
 ];

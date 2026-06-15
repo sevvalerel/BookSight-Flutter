@@ -29,6 +29,7 @@ class _BookDetailScreenState extends State<BookDetailScreen> {
   bool _isLoadingReviews = true;
   bool _isSubmitting = false;
   String? _currentUsername;
+  
 
   final _readingStatusService = ReadingStatusService();
   String? _currentReadingStatus;
@@ -36,6 +37,7 @@ class _BookDetailScreenState extends State<BookDetailScreen> {
 
   final _reviewController = TextEditingController();
   int _selectedRating = 5;
+  Book? _fullBook;
 
   @override
   void initState() {
@@ -43,11 +45,22 @@ class _BookDetailScreenState extends State<BookDetailScreen> {
     _loadReviews();
     _loadCurrentUser();
     _loadReadingStatus();
+    _loadFullBook();
   }
 
   Future<void> _loadCurrentUser() async {
     final username = await AuthService().getUsername();
     setState(() => _currentUsername = username);
+  }
+
+  Future<void> _loadFullBook() async {
+    if (widget.book.description != null) return; // zaten tam veri var
+    try {
+      final full = await BookService().getBookById(widget.book.bookId);
+      if (mounted) setState(() => _fullBook = full);
+    } catch (_) {
+      // sessizce geç, eldeki veriyle göster
+    }
   }
 
   Future<void> _loadReadingStatus() async {
@@ -287,7 +300,7 @@ class _BookDetailScreenState extends State<BookDetailScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final book = widget.book;
+    final book = _fullBook ?? widget.book;
     return Scaffold(
       backgroundColor: _DetailColors.background,
       appBar: AppBar(
@@ -367,10 +380,7 @@ class _BookDetailScreenState extends State<BookDetailScreen> {
               const Text('Açıklama',
                 style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: _DetailColors.darkText)),
               const SizedBox(height: 8),
-              Text(book.description!,
-                style: const TextStyle(fontSize: 14, color: _DetailColors.greyText, height: 1.5),
-                maxLines: 5,
-                overflow: TextOverflow.ellipsis),
+              _DescriptionText(text: book.description!),
             ],
 
             const SizedBox(height: 16),
@@ -681,5 +691,60 @@ class _ReviewCard extends StatelessWidget {
         ],
       ),
     );
+  }
+}
+
+class _DescriptionText extends StatefulWidget {
+  const _DescriptionText({required this.text});
+  final String text;
+
+  @override
+  State<_DescriptionText> createState() => _DescriptionTextState();
+}
+
+class _DescriptionTextState extends State<_DescriptionText> {
+  bool _expanded = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final text = _cleanDescription(widget.text);
+    return GestureDetector(
+      onTap: () => setState(() => _expanded = !_expanded),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(text,
+              style: const TextStyle(
+                  fontSize: 14, color: _DetailColors.greyText, height: 1.5),
+              maxLines: _expanded ? null : 5,
+              overflow: _expanded ? TextOverflow.visible : TextOverflow.ellipsis),
+          const SizedBox(height: 4),
+          Text(
+            _expanded ? 'Daha az göster' : 'Devamını oku',
+            style: const TextStyle(
+                fontSize: 13, fontWeight: FontWeight.w600, color: _DetailColors.mintAccent),
+          ),
+        ],
+      ),
+    );
+  }
+
+  String _cleanDescription(String raw) {
+    final text = raw.trim();
+    // Son tam cümle bitişini (. ! ?) bul
+    final matches = RegExp(r'[.!?]').allMatches(text);
+    if (matches.isNotEmpty) {
+      final lastEnd = matches.last.end;
+      // Eğer son cümle metnin yarısından fazlasını kapsıyorsa, oraya kadar göster
+      if (lastEnd > text.length * 0.4) {
+        return text.substring(0, lastEnd);
+      }
+    }
+    // Cümle sonu bulunamadıysa, son tam kelimeye kadar kes
+    final lastSpace = text.lastIndexOf(' ');
+    if (lastSpace > 0) {
+      return '${text.substring(0, lastSpace)}…';
+    }
+return text;
   }
 }

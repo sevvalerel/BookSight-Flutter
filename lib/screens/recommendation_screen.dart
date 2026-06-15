@@ -86,15 +86,28 @@ class _RecommendationScreenState extends State<RecommendationScreen> {
               const SizedBox(height: 18),
               _buildInsightCard(),
               const SizedBox(height: 20),
-              const Text(
-                'Önerilen Kitaplar',
-                style: TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.w700,
-                  fontStyle: FontStyle.italic,
-                  color: _RecommendationColors.darkText,
-                  letterSpacing: 1.2,
-                ),
+              Row(
+                children: [
+                  const Expanded(
+                    child: Text(
+                      'Önerilen Kitaplar',
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.w700,
+                        color: _RecommendationColors.darkText,
+                        letterSpacing: 1.2,
+                      ),
+                    ),
+                  ),
+                  TextButton.icon(
+                    onPressed: () => _showHistory(context),
+                    icon: const Icon(Icons.history_rounded, size: 18),
+                    label: const Text('Geçmiş'),
+                    style: TextButton.styleFrom(
+                      foregroundColor: _RecommendationColors.purpleAccent,
+                    ),
+                  ),
+                ],
               ),
               const SizedBox(height: 14),
               if (_isLoading)
@@ -241,6 +254,91 @@ class _RecommendationScreenState extends State<RecommendationScreen> {
             ],
           ),
         ],
+      ),
+    );
+  }
+  void _showHistory(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.white,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (_) => DraggableScrollableSheet(
+        initialChildSize: 0.7,
+        maxChildSize: 0.9,
+        minChildSize: 0.4,
+        expand: false,
+        builder: (context, scrollController) {
+          return FutureBuilder<List<BookRecommendation>>(
+            future: _recommendationService.getHistory(),
+            builder: (context, snapshot) {
+              return Padding(
+                padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Center(
+                      child: Container(
+                        width: 40, height: 4,
+                        decoration: BoxDecoration(
+                          color: Colors.grey.shade300,
+                          borderRadius: BorderRadius.circular(2),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    const Text(
+                      'Öneri Geçmişi',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w700,
+                        color: _RecommendationColors.darkText,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    if (snapshot.connectionState == ConnectionState.waiting)
+                      const Center(child: CircularProgressIndicator())
+                    else if (snapshot.hasError)
+                      Text('Hata: ${snapshot.error}')
+                    else if (!snapshot.hasData || snapshot.data!.isEmpty)
+                      const Text('Henüz öneri geçmişi yok.',
+                          style: TextStyle(color: _RecommendationColors.greyText))
+                    else
+                      Expanded(
+                        child: ListView.separated(
+                          controller: scrollController,
+                          itemCount: snapshot.data!.length,
+                          separatorBuilder: (_, __) => const Divider(height: 1),
+                          itemBuilder: (context, i) {
+                            final item = snapshot.data![i];
+                            return ListTile(
+                              contentPadding: EdgeInsets.zero,
+                              leading: ClipRRect(
+                                borderRadius: BorderRadius.circular(8),
+                                child: item.coverUrl != null
+                                    ? Image.network(item.coverUrl!,
+                                        width: 40, height: 56, fit: BoxFit.cover)
+                                    : Container(width: 40, height: 56,
+                                        color: _RecommendationColors.placeholderCover),
+                              ),
+                              title: Text(item.title,
+                                  style: const TextStyle(
+                                      fontWeight: FontWeight.w600, fontSize: 14)),
+                              subtitle: Text(item.author,
+                                  style: const TextStyle(fontSize: 12,
+                                      color: _RecommendationColors.greyText)),
+                            );
+                          },
+                        ),
+                      ),
+                  ],
+                ),
+              );
+            },
+          );
+        },
       ),
     );
   }

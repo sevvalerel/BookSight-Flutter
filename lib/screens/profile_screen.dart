@@ -124,17 +124,24 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             child: user?.avatarUrl != null &&
                                     user!.avatarUrl!.isNotEmpty
                                 ? ClipOval(
-                                    child: Image.network(
-                                      user.avatarUrl!,
-                                      width: 88,
-                                      height: 88,
-                                      fit: BoxFit.cover,
-                                      errorBuilder: (_, __, ___) => const Icon(
-                                        Icons.person_outline_rounded,
-                                        size: 44,
-                                        color: Colors.white,
-                                      ),
-                                    ),
+                                    child: user!.avatarUrl!.startsWith('assets/')
+                                        ? Image.asset(
+                                            user.avatarUrl!,
+                                            width: 88,
+                                            height: 88,
+                                            fit: BoxFit.cover,
+                                          )
+                                        : Image.network(
+                                            user.avatarUrl!,
+                                            width: 88,
+                                            height: 88,
+                                            fit: BoxFit.cover,
+                                            errorBuilder: (_, __, ___) => const Icon(
+                                              Icons.person_outline_rounded,
+                                              size: 44,
+                                              color: Colors.white,
+                                            ),
+                                          ),
                                   )
                                 : const Icon(
                                     Icons.person_outline_rounded,
