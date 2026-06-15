@@ -498,7 +498,7 @@ class _RecommendationBookCard extends StatelessWidget {
                 ),
               ...item.detectedLabels.map(
                 (e) => _PillChip(
-                  label: e.replaceAll('_', ' '),
+                  label: _turkishLabel(e),
                   color: const Color(0xFF9B8FD1),
                 ),
               ),
@@ -685,4 +685,22 @@ class _EmptyCard extends StatelessWidget {
       ),
     );
   }
+}
+String _turkishLabel(String label) {
+  const translations = {
+    'felsefi': 'Felsefi',
+    'psikolojik_derinlik': 'Psikolojik Derinlik',
+    'duygusal_yogunluk': 'Duygusal Yoğunluk',
+    'toplumsal_elestiri': 'Toplumsal Eleştiri',
+    'tarihsel': 'Tarihsel',
+    'karamsar': 'Karamsar',
+    'akici_ve_surukleyici': 'Akıcı ve Sürükleyici',
+    'ask': 'Aşk',
+    'macera': 'Macera',
+    'bilimkurgu_distopya': 'Bilim Kurgu / Distopya',
+    'gizem_polisiye': 'Gizem / Polisiye',
+    'ogretici_farkindalik': 'Öğretici / Farkındalık',
+    'mizah': 'Mizah',
+  };
+  return translations[label] ?? label.replaceAll('_', ' ');
 }
