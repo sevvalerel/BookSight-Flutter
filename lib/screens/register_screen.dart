@@ -8,6 +8,7 @@ abstract final class _RegisterColors {
   static const Color greyText = Color(0xFF757575);
   static const Color filledInput = Color(0xFFB2BCC6);
   static const Color passwordBorder = Color(0xFFE0E4E8);
+  static const Color errorRed = Color(0xFFE53935);
 }
 
 class RegisterScreen extends StatefulWidget {
@@ -25,6 +26,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
   bool _isLoading = false;
   bool _obscurePassword = true;
 
+  // Hata mesajları
+  String? _emailError;
+  String? _passwordError;
+
   static const double _inputRadius = 15;
   static const double _cardRadius = 40;
   static const double _buttonRadius = 28;
@@ -35,6 +40,34 @@ class _RegisterScreenState extends State<RegisterScreen> {
     _emailController.dispose();
     _passwordController.dispose();
     super.dispose();
+  }
+
+  // Email format kontrolü
+  bool _isValidEmail(String email) {
+    final emailRegex = RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$');
+    return emailRegex.hasMatch(email);
+  }
+
+  // Validasyon — hata varsa false döner
+  bool _validate() {
+    final email = _emailController.text.trim();
+    final password = _passwordController.text.trim();
+    String? emailErr;
+    String? passErr;
+
+    if (!_isValidEmail(email)) {
+      emailErr = 'Geçersiz email formatı';
+    }
+    if (password.length < 8) {
+      passErr = 'Şifre en az 8 karakter olmalı';
+    }
+
+    setState(() {
+      _emailError = emailErr;
+      _passwordError = passErr;
+    });
+
+    return emailErr == null && passErr == null;
   }
 
   @override
@@ -93,10 +126,20 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     _buildLabel('E-posta'),
                     const SizedBox(height: 8),
                     _buildEmailField(),
+                    // Email hata mesajı
+                    if (_emailError != null) ...[
+                      const SizedBox(height: 6),
+                      _buildErrorText(_emailError!),
+                    ],
                     const SizedBox(height: 18),
                     _buildLabel('Şifre'),
                     const SizedBox(height: 8),
                     _buildPasswordField(),
+                    // Şifre hata mesajı
+                    if (_passwordError != null) ...[
+                      const SizedBox(height: 6),
+                      _buildErrorText(_passwordError!),
+                    ],
                     const SizedBox(height: 24),
                     SizedBox(
                       height: 52,
@@ -144,7 +187,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
                           ),
                         ),
                         GestureDetector(
-                          onTap: () => Navigator.pushReplacementNamed(context, '/login'),
+                          onTap: () =>
+                              Navigator.pushReplacementNamed(context, '/login'),
                           child: const Text(
                             'Giriş Yap',
                             style: TextStyle(
@@ -177,6 +221,26 @@ class _RegisterScreenState extends State<RegisterScreen> {
     );
   }
 
+  Widget _buildErrorText(String message) {
+    return Row(
+      children: [
+        const Icon(
+          Icons.info_outline,
+          size: 14,
+          color: _RegisterColors.errorRed,
+        ),
+        const SizedBox(width: 4),
+        Text(
+          message,
+          style: const TextStyle(
+            fontSize: 12,
+            color: _RegisterColors.errorRed,
+          ),
+        ),
+      ],
+    );
+  }
+
   Widget _buildUsernameField() {
     return TextField(
       controller: _usernameController,
@@ -189,7 +253,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
       cursorColor: Colors.white,
       decoration: InputDecoration(
         isDense: true,
-        contentPadding: const EdgeInsets.symmetric(horizontal: 4, vertical: 14),
+        contentPadding:
+            const EdgeInsets.symmetric(horizontal: 4, vertical: 14),
         prefixIcon: const Icon(
           Icons.person_outline_rounded,
           color: Colors.white,
@@ -218,6 +283,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
       controller: _emailController,
       keyboardType: TextInputType.emailAddress,
       autocorrect: false,
+      // Kullanıcı yazmaya başlayınca email hatasını temizle
+      onChanged: (_) {
+        if (_emailError != null) setState(() => _emailError = null);
+      },
       style: const TextStyle(
         color: Colors.white,
         fontSize: 15,
@@ -226,7 +295,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
       cursorColor: Colors.white,
       decoration: InputDecoration(
         isDense: true,
-        contentPadding: const EdgeInsets.symmetric(horizontal: 4, vertical: 14),
+        contentPadding:
+            const EdgeInsets.symmetric(horizontal: 4, vertical: 14),
         prefixIcon: const Icon(
           Icons.mail_outline_rounded,
           color: Colors.white,
@@ -254,13 +324,18 @@ class _RegisterScreenState extends State<RegisterScreen> {
     return TextField(
       controller: _passwordController,
       obscureText: _obscurePassword,
+      // Kullanıcı yazmaya başlayınca şifre hatasını temizle
+      onChanged: (_) {
+        if (_passwordError != null) setState(() => _passwordError = null);
+      },
       style: const TextStyle(
         color: _RegisterColors.darkText,
         fontSize: 15,
       ),
       decoration: InputDecoration(
         isDense: true,
-        contentPadding: const EdgeInsets.symmetric(horizontal: 4, vertical: 14),
+        contentPadding:
+            const EdgeInsets.symmetric(horizontal: 4, vertical: 14),
         prefixIcon: const Icon(
           Icons.lock_outline_rounded,
           color: _RegisterColors.greyText,
@@ -274,7 +349,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
             color: _RegisterColors.greyText,
             size: 22,
           ),
-          onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
+          onPressed: () =>
+              setState(() => _obscurePassword = !_obscurePassword),
         ),
         filled: true,
         fillColor: Colors.white,
@@ -302,12 +378,16 @@ class _RegisterScreenState extends State<RegisterScreen> {
     final email = _emailController.text.trim();
     final password = _passwordController.text.trim();
 
+    // Boş alan kontrolü
     if (username.isEmpty || email.isEmpty || password.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Tüm alanlar doldurulmalıdır.')),
       );
       return;
     }
+
+    // Format ve uzunluk validasyonu
+    if (!_validate()) return;
 
     setState(() => _isLoading = true);
 
@@ -319,12 +399,40 @@ class _RegisterScreenState extends State<RegisterScreen> {
       );
 
       if (mounted) {
-        Navigator.pushReplacementNamed(context, '/home');
+        // Başarılı kayıt bildirimi
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Row(
+              children: [
+                Icon(Icons.check_circle_outline, color: Colors.white, size: 20),
+                SizedBox(width: 10),
+                Text(
+                  'Kayıt başarılı! Hoş geldiniz 🎉',
+                  style: TextStyle(fontWeight: FontWeight.w500),
+                ),
+              ],
+            ),
+            backgroundColor: _RegisterColors.primaryGreen,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+            duration: const Duration(seconds: 2),
+          ),
+        );
+
+        // Kısa bekleme sonrası login'e yönlendir
+        await Future.delayed(const Duration(milliseconds: 1800));
+        if (mounted) {
+          Navigator.pushReplacementNamed(context, '/login');
+        }
       }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(e.toString().replaceAll('Exception: ', ''))),
+          SnackBar(
+            content: Text(e.toString().replaceAll('Exception: ', '')),
+          ),
         );
       }
     } finally {

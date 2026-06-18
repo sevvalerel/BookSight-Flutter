@@ -3,7 +3,10 @@ import '../navigation/app_page_route.dart';
 import '../services/review_service.dart';
 import '../services/user_service.dart';
 import '../services/stats_service.dart';
+import '../services/reading_status_service.dart';
 import 'edit_profile_screen.dart';
+import 'my_reviews_screen.dart';
+import 'read_books_screen.dart';
 import 'reading_stats_screen.dart';
 import '../widgets/screen_header.dart';
 
@@ -41,6 +44,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         UserService().getMyProfile(),
         ReviewService().getMyReviews(),
         StatsService().getMyStats(),
+        ReadingStatusService().getMyLibrary(),
       ]);
     });
   }
@@ -59,6 +63,24 @@ class _ProfileScreenState extends State<ProfileScreen> {
     Navigator.push(
       context,
       AppPageRoute(page: const ReadingStatsScreen()),
+    );
+  }
+
+  void _openMyReviews(List<Review> reviews, List<LibraryEntry> library) {
+    final libraryMap = {for (final e in library) e.bookId: e};
+    Navigator.push(
+      context,
+      AppPageRoute(page: MyReviewsScreen(reviews: reviews, libraryMap: libraryMap)),
+    );
+  }
+
+  void _openReadBooks(List<LibraryEntry> library) {
+    final readBooks = library
+        .where((e) => e.status == ReadingStatusService.statusRead)
+        .toList();
+    Navigator.push(
+      context,
+      AppPageRoute(page: ReadBooksScreen(books: readBooks)),
     );
   }
 
@@ -82,7 +104,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
         final user = snapshot.data?[0] as UserProfile?;
         final myReviews = snapshot.data?[1] as List<Review>?;
         final stats = snapshot.data?[2] as ReadingStats?;
+        final library = snapshot.data?[3] as List<LibraryEntry>?;
         final reviewCount = myReviews?.length ?? 0;
+        final readCount = library
+                ?.where((e) => e.status == ReadingStatusService.statusRead)
+                .length ??
+            0;
 
         final likedThemes = stats?.topThemes ?? <String>[];
         final favoriteGenres =
@@ -186,6 +213,19 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                 value: reviewCount.toString(),
                                 label: 'Yorum',
                                 color: _ProfileColors.purpleAccent,
+                                onTap: () => _openMyReviews(myReviews ?? [], library ?? []),
+                              ),
+                              Container(
+                                width: 1,
+                                height: 40,
+                                margin: const EdgeInsets.symmetric(horizontal: 28),
+                                color: _ProfileColors.chipBorder,
+                              ),
+                              _StatItem(
+                                value: readCount.toString(),
+                                label: 'Okunan',
+                                color: _ProfileColors.mintAccent,
+                                onTap: () => _openReadBooks(library ?? []),
                               ),
                             ],
                           ),
@@ -387,32 +427,37 @@ class _StatItem extends StatelessWidget {
     required this.value,
     required this.label,
     required this.color,
+    this.onTap,
   });
   final String value;
   final String label;
   final Color color;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      children: [
-        Text(
-          value,
-          style: TextStyle(
-            fontSize: 32,
-            fontWeight: FontWeight.w700,
-            color: color,
+    return GestureDetector(
+      onTap: onTap,
+      child: Column(
+        children: [
+          Text(
+            value,
+            style: TextStyle(
+              fontSize: 32,
+              fontWeight: FontWeight.w700,
+              color: color,
+            ),
           ),
-        ),
-        const SizedBox(height: 2),
-        Text(
-          label,
-          style: const TextStyle(
-            fontSize: 13,
-            color: _ProfileColors.greyText,
+          const SizedBox(height: 2),
+          Text(
+            label,
+            style: const TextStyle(
+              fontSize: 13,
+              color: _ProfileColors.greyText,
+            ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 }

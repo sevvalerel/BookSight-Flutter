@@ -4,18 +4,20 @@ import 'navigation/app_page_route.dart';
 import 'screens/home_screen.dart';
 import 'screens/login_screen.dart';
 import 'screens/register_screen.dart';
-import 'screens/splash_screen.dart';
-
 import 'screens/book_detail_screen.dart';
+import 'services/auth_service.dart';
 import 'services/book_service.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-void main() {
-  runApp(const BookSightApp());
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  final loggedIn = await AuthService().isLoggedIn();
+  runApp(BookSightApp(initialRoute: loggedIn ? '/home' : '/login'));
 }
 
 class BookSightApp extends StatelessWidget {
-  const BookSightApp({super.key});
+  final String initialRoute;
+  const BookSightApp({super.key, required this.initialRoute});
 
   @override
   Widget build(BuildContext context) {
@@ -30,9 +32,8 @@ class BookSightApp extends StatelessWidget {
         textTheme: GoogleFonts.poppinsTextTheme(),
         useMaterial3: true,
       ),
-      initialRoute: '/splash',
+      initialRoute: initialRoute,
       routes: {
-        '/splash': (context) => const SplashScreen(),
         '/login': (context) => const LoginScreen(),
         '/home': (context) => const HomeScreen(),
       },
