@@ -4,6 +4,8 @@ import '../services/review_service.dart';
 import '../services/auth_service.dart';
 import '../widgets/book_cover.dart';
 import '../services/reading_status_service.dart';
+import '../navigation/app_page_route.dart';
+import 'user_profile_screen.dart';
 
 abstract final class _DetailColors {
   static const Color background = Color(0xFFF5FAF7);
@@ -634,11 +636,20 @@ class _ReviewCard extends StatelessWidget {
   final String? currentUsername;
   final VoidCallback onDelete;
   final VoidCallback onEdit;
-  
+
+  void _openUserProfile(BuildContext context) {
+    final username = review.username;
+    if (username == null || username == currentUsername) return;
+    Navigator.push(
+      context,
+      AppPageRoute(page: UserProfileScreen(username: username)),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
     final isOwner = currentUsername != null && currentUsername == review.username;
+    final username = review.username ?? 'Kullanıcı';
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -665,9 +676,24 @@ class _ReviewCard extends StatelessWidget {
                 )),
               ),
               const Spacer(),
-              Text(
-                review.username ?? 'Kullanıcı',
-                style: const TextStyle(fontSize: 12, color: _DetailColors.greyText),
+              GestureDetector(
+                onTap: isOwner ? null : () => _openUserProfile(context),
+                child: Row(
+                  children: [
+                    _MiniAvatar(username: username, avatarUrl: review.userAvatarUrl),
+                    const SizedBox(width: 6),
+                    Text(
+                      username,
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: isOwner
+                            ? _DetailColors.greyText
+                            : _DetailColors.mintAccent,
+                        fontWeight: isOwner ? FontWeight.normal : FontWeight.w500,
+                      ),
+                    ),
+                  ],
+                ),
               ),
               if (isOwner) ...[
                 const SizedBox(width: 8),
@@ -689,6 +715,58 @@ class _ReviewCard extends StatelessWidget {
             style: const TextStyle(fontSize: 14, color: _DetailColors.darkText, height: 1.4),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _MiniAvatar extends StatelessWidget {
+  const _MiniAvatar({required this.username, this.avatarUrl});
+  final String username;
+  final String? avatarUrl;
+
+  @override
+  Widget build(BuildContext context) {
+    final url = avatarUrl?.trim();
+    if (url != null && url.isNotEmpty) {
+      if (url.startsWith('assets/')) {
+        return ClipOval(
+          child: Image.asset(url, width: 22, height: 22, fit: BoxFit.cover,
+              errorBuilder: (_, __, ___) => _initials()),
+        );
+      }
+      final netUrl = url.startsWith('http://')
+          ? url.replaceFirst('http://', 'https://')
+          : url;
+      return ClipOval(
+        child: Image.network(netUrl, width: 22, height: 22, fit: BoxFit.cover,
+            errorBuilder: (_, __, ___) => _initials()),
+      );
+    }
+    return _initials();
+  }
+
+  Widget _initials() {
+    return Container(
+      width: 22,
+      height: 22,
+      decoration: const BoxDecoration(
+        shape: BoxShape.circle,
+        gradient: LinearGradient(
+          colors: [Color(0xFF8BC3A3), Color(0xFFB8A9E0)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+      ),
+      child: Center(
+        child: Text(
+          username.isNotEmpty ? username[0].toUpperCase() : '?',
+          style: const TextStyle(
+            fontSize: 10,
+            fontWeight: FontWeight.w700,
+            color: Colors.white,
+          ),
+        ),
       ),
     );
   }

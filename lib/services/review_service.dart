@@ -12,6 +12,7 @@ class Review {
   final int? bookId;
   final String? bookTitle;
   final String? bookCoverUrl;
+  final String? userAvatarUrl;
 
   Review({
     this.reviewId,
@@ -21,6 +22,7 @@ class Review {
     this.bookId,
     this.bookTitle,
     this.bookCoverUrl,
+    this.userAvatarUrl,
   });
 
   factory Review.fromJson(Map<String, dynamic> json) {
@@ -32,6 +34,7 @@ class Review {
       bookId: json['bookId'],
       bookTitle: json['bookTitle'],
       bookCoverUrl: json['bookCoverUrl'],
+      userAvatarUrl: json['userAvatarUrl'],
     );
   }
 }

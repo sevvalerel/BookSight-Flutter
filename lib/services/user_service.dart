@@ -33,6 +33,110 @@ class UserProfile {
   }
 }
 
+class CheckinStatus {
+  final bool alreadyCheckedIn;
+  final int streak;
+  final int totalPoints;
+
+  CheckinStatus({
+    required this.alreadyCheckedIn,
+    required this.streak,
+    required this.totalPoints,
+  });
+
+  factory CheckinStatus.fromJson(Map<String, dynamic> json) {
+    return CheckinStatus(
+      alreadyCheckedIn: json['alreadyCheckedIn'] ?? false,
+      streak: json['streak'] ?? 0,
+      totalPoints: json['totalPoints'] ?? 0,
+    );
+  }
+}
+
+class LeaderboardEntry {
+  final int userId;
+  final String username;
+  final String? avatarUrl;
+  final int totalPoints;
+  final int streak;
+
+  LeaderboardEntry({
+    required this.userId,
+    required this.username,
+    this.avatarUrl,
+    required this.totalPoints,
+    required this.streak,
+  });
+
+  factory LeaderboardEntry.fromJson(Map<String, dynamic> json) {
+    return LeaderboardEntry(
+      userId: json['userId'],
+      username: json['username'],
+      avatarUrl: json['avatarUrl'],
+      totalPoints: json['totalPoints'] ?? 0,
+      streak: json['streak'] ?? 0,
+    );
+  }
+}
+
+class PublicUserReview {
+  final String? bookTitle;
+  final String? bookCoverUrl;
+  final int? rating;
+  final String? reviewText;
+
+  PublicUserReview({this.bookTitle, this.bookCoverUrl, this.rating, this.reviewText});
+
+  factory PublicUserReview.fromJson(Map<String, dynamic> json) {
+    return PublicUserReview(
+      bookTitle: json['bookTitle'],
+      bookCoverUrl: json['bookCoverUrl'],
+      rating: json['rating'],
+      reviewText: json['reviewText'],
+    );
+  }
+}
+
+class PublicUserProfile {
+  final int userId;
+  final String username;
+  final String? avatarUrl;
+  final int totalPoints;
+  final int streak;
+  final int reviewCount;
+  final int readCount;
+  final List<String> favoriteGenres;
+  final List<PublicUserReview> reviews;
+
+  PublicUserProfile({
+    required this.userId,
+    required this.username,
+    this.avatarUrl,
+    required this.totalPoints,
+    required this.streak,
+    required this.reviewCount,
+    required this.readCount,
+    required this.favoriteGenres,
+    required this.reviews,
+  });
+
+  factory PublicUserProfile.fromJson(Map<String, dynamic> json) {
+    return PublicUserProfile(
+      userId: json['userId'],
+      username: json['username'],
+      avatarUrl: json['avatarUrl'],
+      totalPoints: json['totalPoints'] ?? 0,
+      streak: json['streak'] ?? 0,
+      reviewCount: json['reviewCount'] ?? 0,
+      readCount: json['readCount'] ?? 0,
+      favoriteGenres: List<String>.from(json['favoriteGenres'] ?? []),
+      reviews: (json['reviews'] as List<dynamic>? ?? [])
+          .map((e) => PublicUserReview.fromJson(e))
+          .toList(),
+    );
+  }
+}
+
 class UserService {
   static const String _baseUrl = ApiConfig.baseUrl;
 
@@ -56,6 +160,51 @@ class UserService {
       );
     }
 
+    throw Exception(parseApiError(response));
+  }
+
+  Future<CheckinStatus> getCheckinStatus() async {
+    final token = await _getToken();
+    if (token == null) throw Exception('Oturum açılmamış.');
+    final response = await http.get(
+      Uri.parse('$_baseUrl/api/users/checkin/status'),
+      headers: {'Authorization': 'Bearer $token'},
+    );
+    if (response.statusCode == 200) {
+      return CheckinStatus.fromJson(jsonDecode(utf8.decode(response.bodyBytes)));
+    }
+    throw Exception(parseApiError(response));
+  }
+
+  Future<CheckinStatus> doCheckin() async {
+    final token = await _getToken();
+    if (token == null) throw Exception('Oturum açılmamış.');
+    final response = await http.post(
+      Uri.parse('$_baseUrl/api/users/checkin'),
+      headers: {'Authorization': 'Bearer $token'},
+    );
+    if (response.statusCode == 200) {
+      return CheckinStatus.fromJson(jsonDecode(utf8.decode(response.bodyBytes)));
+    }
+    throw Exception(parseApiError(response));
+  }
+
+  Future<List<LeaderboardEntry>> getLeaderboard() async {
+    final response = await http.get(Uri.parse('$_baseUrl/api/users/leaderboard'));
+    if (response.statusCode == 200) {
+      final List data = jsonDecode(utf8.decode(response.bodyBytes));
+      return data.map((e) => LeaderboardEntry.fromJson(e)).toList();
+    }
+    throw Exception(parseApiError(response));
+  }
+
+  Future<PublicUserProfile> getUserPublicProfile(String username) async {
+    final response = await http.get(
+      Uri.parse('$_baseUrl/api/users/$username'),
+    );
+    if (response.statusCode == 200) {
+      return PublicUserProfile.fromJson(jsonDecode(utf8.decode(response.bodyBytes)));
+    }
     throw Exception(parseApiError(response));
   }
 

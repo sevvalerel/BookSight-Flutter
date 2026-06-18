@@ -297,7 +297,7 @@ Future<void> _loadBooks({bool reset = false}) async {
           SliverToBoxAdapter(
             child: Padding(
               padding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
-              child: Text('Trend Aramalar',
+              child: Text('Hızlı Ara',
                 style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: _HomeColors.darkText)),
             ),
           ),

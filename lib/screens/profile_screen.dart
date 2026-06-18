@@ -5,6 +5,7 @@ import '../services/user_service.dart';
 import '../services/stats_service.dart';
 import '../services/reading_status_service.dart';
 import 'edit_profile_screen.dart';
+import 'leaderboard_screen.dart';
 import 'my_reviews_screen.dart';
 import 'read_books_screen.dart';
 import 'reading_stats_screen.dart';
@@ -31,11 +32,14 @@ class ProfileScreen extends StatefulWidget {
 
 class _ProfileScreenState extends State<ProfileScreen> {
   Future<List<dynamic>>? _profileFuture;
+  CheckinStatus? _checkinStatus;
+  bool _isCheckingIn = false;
 
   @override
   void initState() {
     super.initState();
     _loadProfile();
+    _loadCheckinStatus();
   }
 
   void _loadProfile() {
@@ -47,6 +51,29 @@ class _ProfileScreenState extends State<ProfileScreen> {
         ReadingStatusService().getMyLibrary(),
       ]);
     });
+  }
+
+  Future<void> _loadCheckinStatus() async {
+    try {
+      final status = await UserService().getCheckinStatus();
+      if (mounted) setState(() => _checkinStatus = status);
+    } catch (_) {}
+  }
+
+  Future<void> _doCheckin() async {
+    setState(() => _isCheckingIn = true);
+    try {
+      final result = await UserService().doCheckin();
+      if (mounted) setState(() => _checkinStatus = result);
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(e.toString().replaceAll('Exception: ', ''))),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isCheckingIn = false);
+    }
   }
 
   Future<void> _openEditProfile(UserProfile user) async {
@@ -63,6 +90,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
     Navigator.push(
       context,
       AppPageRoute(page: const ReadingStatsScreen()),
+    );
+  }
+
+  void _openLeaderboard(String? username) {
+    Navigator.push(
+      context,
+      AppPageRoute(page: LeaderboardScreen(currentUsername: username)),
     );
   }
 
@@ -230,6 +264,33 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             ],
                           ),
                           const SizedBox(height: 20),
+                          _CheckinCard(
+                            status: _checkinStatus,
+                            isLoading: _isCheckingIn,
+                            onCheckin: _doCheckin,
+                          ),
+                          const SizedBox(height: 12),
+                          SizedBox(
+                            width: double.infinity,
+                            child: OutlinedButton.icon(
+                              onPressed: () => _openLeaderboard(user?.username),
+                              icon: const Icon(Icons.emoji_events_rounded, size: 16),
+                              label: const Text('Sıralama'),
+                              style: OutlinedButton.styleFrom(
+                                foregroundColor: const Color(0xFFE8A23C),
+                                side: const BorderSide(color: Color(0xFFE8A23C)),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(14),
+                                ),
+                                padding: const EdgeInsets.symmetric(vertical: 12),
+                                textStyle: const TextStyle(
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 10),
                           SizedBox(
                             width: double.infinity,
                             child: OutlinedButton.icon(
@@ -455,6 +516,102 @@ class _StatItem extends StatelessWidget {
               fontSize: 13,
               color: _ProfileColors.greyText,
             ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _CheckinCard extends StatelessWidget {
+  const _CheckinCard({
+    required this.status,
+    required this.isLoading,
+    required this.onCheckin,
+  });
+  final CheckinStatus? status;
+  final bool isLoading;
+  final VoidCallback onCheckin;
+
+  @override
+  Widget build(BuildContext context) {
+    final done = status?.alreadyCheckedIn ?? false;
+    final streak = status?.streak ?? 0;
+    final points = status?.totalPoints ?? 0;
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: done
+            ? const Color(0xFFE8F4EE)
+            : const Color(0xFFF0EEF9),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(
+          color: done
+              ? const Color(0xFF8BC3A3)
+              : const Color(0xFFB8A9E0),
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Bugün okudun mu?',
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+              color: Color(0xFF2D4150),
+            ),
+          ),
+          const SizedBox(height: 10),
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  '🔥 $streak günlük seri   ⭐ $points puan',
+                  style: const TextStyle(
+                    fontSize: 13,
+                    color: Color(0xFF6B7A85),
+                  ),
+                ),
+              ),
+              SizedBox(
+                height: 36,
+                child: ElevatedButton(
+                  onPressed: (done || isLoading) ? null : onCheckin,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: done
+                        ? const Color(0xFF8BC3A3)
+                        : const Color(0xFF9B8FD1),
+                    foregroundColor: Colors.white,
+                    disabledBackgroundColor: done
+                        ? const Color(0xFF8BC3A3)
+                        : Colors.grey,
+                    disabledForegroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    elevation: 0,
+                    padding: const EdgeInsets.symmetric(horizontal: 14),
+                  ),
+                  child: isLoading
+                      ? const SizedBox(
+                          width: 16,
+                          height: 16,
+                          child: CircularProgressIndicator(
+                              strokeWidth: 2, color: Colors.white),
+                        )
+                      : Text(
+                          done ? 'Bugün tamamlandı ✓' : 'Okudum ✓',
+                          style: const TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                ),
+              ),
+            ],
           ),
         ],
       ),

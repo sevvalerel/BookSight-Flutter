@@ -5,6 +5,7 @@ import 'screens/home_screen.dart';
 import 'screens/login_screen.dart';
 import 'screens/register_screen.dart';
 import 'screens/book_detail_screen.dart';
+import 'screens/user_profile_screen.dart';
 import 'services/auth_service.dart';
 import 'services/book_service.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -49,6 +50,12 @@ class BookSightApp extends StatelessWidget {
             return AppPageRoute(
               settings: settings,
               page: BookDetailScreen(book: book),
+            );
+          case '/user-profile':
+            final username = settings.arguments as String;
+            return AppPageRoute(
+              settings: settings,
+              page: UserProfileScreen(username: username),
             );
           default:
             return null;
