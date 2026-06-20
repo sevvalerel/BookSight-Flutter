@@ -24,6 +24,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   bool _isLoading = false;
+  bool _isSuccess = false;
   bool _obscurePassword = true;
 
   // Hata mesajları
@@ -145,12 +146,15 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       height: 52,
                       width: double.infinity,
                       child: ElevatedButton(
-                        onPressed: _isLoading ? null : _register,
+                        onPressed: (_isLoading || _isSuccess) ? null : _register,
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: _RegisterColors.primaryGreen,
+                          backgroundColor: _isSuccess
+                              ? _RegisterColors.primaryGreen
+                              : _RegisterColors.primaryGreen,
                           foregroundColor: Colors.white,
                           disabledBackgroundColor:
-                              _RegisterColors.primaryGreen.withValues(alpha: 0.6),
+                              _RegisterColors.primaryGreen.withValues(alpha: 0.85),
+                          disabledForegroundColor: Colors.white,
                           elevation: 0,
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(_buttonRadius),
@@ -165,13 +169,29 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                   color: Colors.white,
                                 ),
                               )
-                            : const Text(
-                                'Kayıt Ol',
-                                style: TextStyle(
-                                  fontWeight: FontWeight.w700,
-                                  fontSize: 16,
-                                ),
-                              ),
+                            : _isSuccess
+                                ? const Row(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      Icon(Icons.check_circle_outline,
+                                          color: Colors.white, size: 20),
+                                      SizedBox(width: 8),
+                                      Text(
+                                        'Kayıt Başarılı!',
+                                        style: TextStyle(
+                                          fontWeight: FontWeight.w700,
+                                          fontSize: 16,
+                                        ),
+                                      ),
+                                    ],
+                                  )
+                                : const Text(
+                                    'Kayıt Ol',
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.w700,
+                                      fontSize: 16,
+                                    ),
+                                  ),
                       ),
                     ),
                     const SizedBox(height: 24),
@@ -399,54 +419,11 @@ class _RegisterScreenState extends State<RegisterScreen> {
       );
 
       if (mounted) {
-        await showDialog(
-          context: context,
-          barrierDismissible: false,
-          builder: (_) => AlertDialog(
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(20),
-            ),
-            content: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(
-                  Icons.check_circle_rounded,
-                  color: _RegisterColors.primaryGreen,
-                  size: 56,
-                ),
-                const SizedBox(height: 16),
-                const Text(
-                  'Kayıt Başarılı!',
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.w700,
-                    color: _RegisterColors.darkText,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                const Text(
-                  'Hoş geldiniz 🎉',
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: _RegisterColors.greyText,
-                  ),
-                ),
-              ],
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(context),
-                child: const Text(
-                  'Giriş Yap',
-                  style: TextStyle(
-                    color: _RegisterColors.primaryGreen,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-              ),
-            ],
-          ),
-        );
+        setState(() {
+          _isLoading = false;
+          _isSuccess = true;
+        });
+        await Future.delayed(const Duration(milliseconds: 1800));
         if (mounted) {
           Navigator.pushReplacementNamed(context, '/login');
         }
@@ -460,7 +437,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
         );
       }
     } finally {
-      if (mounted) setState(() => _isLoading = false);
+      if (mounted && !_isSuccess) setState(() => _isLoading = false);
     }
   }
 }
