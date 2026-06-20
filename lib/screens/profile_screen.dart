@@ -156,7 +156,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               const ScreenHeader(title: 'Profilim'),
-              Padding(
+              Center(
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 600),
+              child: Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 20),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -473,6 +476,8 @@ Row(
                       ),
                     ),
                   ],
+                ),
+              ),
                 ),
               ),
             ],

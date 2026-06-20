@@ -126,21 +126,26 @@ class _ReadingStatsScreenState extends State<ReadingStatsScreen> {
                         ],
                       ),
                     ),
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 20),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          _SummaryGrid(stats: _stats!),
-                          const SizedBox(height: 24),
-                          const _SectionTitle(title: 'Tür Dağılımı'),
-                          const SizedBox(height: 12),
-                          _GenreChartCard(stats: _stats!),
-                          const SizedBox(height: 24),
-                          const _SectionTitle(title: 'Aylık Trend'),
-                          const SizedBox(height: 12),
-                          _MonthlyTrendCard(stats: _stats!),
-                        ],
+                    Center(
+                      child: ConstrainedBox(
+                        constraints: const BoxConstraints(maxWidth: 680),
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 20),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              _SummaryGrid(stats: _stats!),
+                              const SizedBox(height: 24),
+                              const _SectionTitle(title: 'Tür Dağılımı'),
+                              const SizedBox(height: 12),
+                              _GenreChartCard(stats: _stats!),
+                              const SizedBox(height: 24),
+                              const _SectionTitle(title: 'Aylık Trend'),
+                              const SizedBox(height: 12),
+                              _MonthlyTrendCard(stats: _stats!),
+                            ],
+                          ),
+                        ),
                       ),
                     ),
                   ],

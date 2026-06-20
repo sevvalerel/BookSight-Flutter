@@ -413,16 +413,13 @@ class _RegisterScreenState extends State<RegisterScreen> {
               ],
             ),
             backgroundColor: _RegisterColors.primaryGreen,
-            behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
+            behavior: SnackBarBehavior.fixed,
             duration: const Duration(seconds: 2),
           ),
         );
 
         // Kısa bekleme sonrası login'e yönlendir
-        await Future.delayed(const Duration(milliseconds: 1800));
+        await Future.delayed(const Duration(milliseconds: 2200));
         if (mounted) {
           Navigator.pushReplacementNamed(context, '/login');
         }
