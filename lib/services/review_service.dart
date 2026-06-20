@@ -47,9 +47,11 @@ class ReviewService {
     return prefs.getString('jwt_token');
   }
 
-  Future<List<Review>> getReviews(int bookId) async {
+  Future<List<Review>> getReviews(int bookId, {String sortBy = 'date_desc'}) async {
     final response = await http.get(
-      Uri.parse('$_baseUrl/api/reviews/book/$bookId'),
+      Uri.parse('$_baseUrl/api/reviews/book/$bookId').replace(
+        queryParameters: {'sortBy': sortBy},
+      ),
     );
 
     if (response.statusCode == 200) {

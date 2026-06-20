@@ -42,7 +42,7 @@ class _HomeScreenState extends State<HomeScreen> {
   bool _isLoadingMore = false;
   bool _hasNextPage = true;
   int _currentPage = 0;
-  String? _selectedGenre;
+  final Set<String> _selectedGenres = {};
   double? _minRating;
   int _searchRequestId = 0;
   bool _runInitialListAnimation = true;
@@ -85,7 +85,7 @@ Future<void> _loadBooks({bool reset = false}) async {
     setState(() => _isLoading = true);
     try {
       final result = await _bookService.getBooks(
-        genre: _selectedGenre,
+        genres: _selectedGenres.isNotEmpty ? _selectedGenres.toList() : null,
         minRating: _minRating,
         page: _currentPage,
       );
@@ -113,7 +113,7 @@ Future<void> _loadBooks({bool reset = false}) async {
     try {
       _currentPage++;
       final result = await _bookService.getBooks(
-        genre: _selectedGenre,
+        genres: _selectedGenres.isNotEmpty ? _selectedGenres.toList() : null,
         page: _currentPage,
       );
       setState(() {
@@ -127,9 +127,16 @@ Future<void> _loadBooks({bool reset = false}) async {
     }
   }
 
-  Future<void> _loadBooksByGenre(String? genre) async {
-    _selectedGenre = genre;
-    await _loadBooks(reset: true);
+  void _toggleGenre(String genre) {
+    setState(() {
+      if (_selectedGenres.contains(genre)) {
+        _selectedGenres.remove(genre);
+      } else {
+        _selectedGenres.add(genre);
+      }
+      _searchController.clear();
+    });
+    _loadBooks(reset: true);
   }void _showRatingFilter() {
     showModalBottomSheet(
       context: context,
@@ -308,14 +315,8 @@ Future<void> _loadBooks({bool reset = false}) async {
                 spacing: 8, runSpacing: 8,
                 children: _trendTags.map((t) => _TrendChip(
                   label: t,
-                  selected: _selectedGenre == t,
-                  onTap: () {
-                    setState(() {
-                      _selectedGenre = _selectedGenre == t ? null : t;
-                      _searchController.clear();
-                    });
-                    _loadBooksByGenre(_selectedGenre);
-                  },
+                  selected: _selectedGenres.contains(t),
+                  onTap: () => _toggleGenre(t),
                 )).toList(),
               ),
             ),

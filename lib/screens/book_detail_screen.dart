@@ -31,6 +31,7 @@ class _BookDetailScreenState extends State<BookDetailScreen> {
   bool _isLoadingReviews = true;
   bool _isSubmitting = false;
   String? _currentUsername;
+  String _sortBy = 'date_desc';
   
 
   final _readingStatusService = ReadingStatusService();
@@ -208,7 +209,7 @@ class _BookDetailScreenState extends State<BookDetailScreen> {
 
   Future<void> _loadReviews() async {
     try {
-      final reviews = await _reviewService.getReviews(widget.book.bookId);
+      final reviews = await _reviewService.getReviews(widget.book.bookId, sortBy: _sortBy);
       if (!mounted) return;
       setState(() {
         _reviews = reviews;
@@ -467,8 +468,43 @@ class _BookDetailScreenState extends State<BookDetailScreen> {
             ),
 
             const SizedBox(height: 24),
-            const Text('Yorumlar',
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: _DetailColors.darkText)),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text('Yorumlar',
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: _DetailColors.darkText)),
+                PopupMenuButton<String>(
+                  icon: const Icon(Icons.sort_rounded, color: _DetailColors.greyText, size: 22),
+                  onSelected: (value) {
+                    setState(() => _sortBy = value);
+                    _loadReviews();
+                  },
+                  itemBuilder: (_) => [
+                    PopupMenuItem(value: 'date_desc',
+                      child: Row(children: [
+                        if (_sortBy == 'date_desc') const Icon(Icons.check, size: 16, color: _DetailColors.mintAccent),
+                        if (_sortBy != 'date_desc') const SizedBox(width: 16),
+                        const SizedBox(width: 8),
+                        const Text('En yeni'),
+                      ])),
+                    PopupMenuItem(value: 'rating_desc',
+                      child: Row(children: [
+                        if (_sortBy == 'rating_desc') const Icon(Icons.check, size: 16, color: _DetailColors.mintAccent),
+                        if (_sortBy != 'rating_desc') const SizedBox(width: 16),
+                        const SizedBox(width: 8),
+                        const Text('Yüksek puan'),
+                      ])),
+                    PopupMenuItem(value: 'rating_asc',
+                      child: Row(children: [
+                        if (_sortBy == 'rating_asc') const Icon(Icons.check, size: 16, color: _DetailColors.mintAccent),
+                        if (_sortBy != 'rating_asc') const SizedBox(width: 16),
+                        const SizedBox(width: 8),
+                        const Text('Düşük puan'),
+                      ])),
+                  ],
+                ),
+              ],
+            ),
             const SizedBox(height: 12),
             _isLoadingReviews
               ? const Center(child: CircularProgressIndicator())
