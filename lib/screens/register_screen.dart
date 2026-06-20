@@ -399,27 +399,54 @@ class _RegisterScreenState extends State<RegisterScreen> {
       );
 
       if (mounted) {
-        // Başarılı kayıt bildirimi
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: const Row(
+        await showDialog(
+          context: context,
+          barrierDismissible: false,
+          builder: (_) => AlertDialog(
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(20),
+            ),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(Icons.check_circle_outline, color: Colors.white, size: 20),
-                SizedBox(width: 10),
-                Text(
-                  'Kayıt başarılı! Hoş geldiniz 🎉',
-                  style: TextStyle(fontWeight: FontWeight.w500),
+                Icon(
+                  Icons.check_circle_rounded,
+                  color: _RegisterColors.primaryGreen,
+                  size: 56,
+                ),
+                const SizedBox(height: 16),
+                const Text(
+                  'Kayıt Başarılı!',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w700,
+                    color: _RegisterColors.darkText,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                const Text(
+                  'Hoş geldiniz 🎉',
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: _RegisterColors.greyText,
+                  ),
                 ),
               ],
             ),
-            backgroundColor: _RegisterColors.primaryGreen,
-            behavior: SnackBarBehavior.fixed,
-            duration: const Duration(seconds: 2),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text(
+                  'Giriş Yap',
+                  style: TextStyle(
+                    color: _RegisterColors.primaryGreen,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+            ],
           ),
         );
-
-        // Kısa bekleme sonrası login'e yönlendir
-        await Future.delayed(const Duration(milliseconds: 2200));
         if (mounted) {
           Navigator.pushReplacementNamed(context, '/login');
         }
